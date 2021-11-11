@@ -68,25 +68,29 @@ class Board:
     def display_board(self):
         images = {}
         for filename in os.listdir(self.VISUAL_PATH):
-            img = cv2.imread(os.path.join(self.VISUAL_PATH,filename))
+            img = cv2.imread(os.path.join(self.VISUAL_PATH,filename), 1)
             if img is not None:
                 images[filename] = img
-        tile_colors = np.zeros(64).reshape(8, 8)
-        tile_colors[1::2, :-1:2] = 1
-        tile_colors[::2, 1::2] = 1
+        tile_colors = np.zeros(64*3).reshape(8, 8, 3)
+        tile_colors[1::2, :-1:2, :] = 1
+        tile_colors[::2, 1::2, :] = 1
         resized_board = cv2.resize(tile_colors, (1024, 1024), 0, 0, interpolation=cv2.INTER_NEAREST)
         offset = 20
         piece_size = (1024//8-offset, 1024//8-offset)
         resized_piece = cv2.resize(np.array(images["orange_queen.png"]), piece_size, 0, 0, interpolation = cv2.INTER_AREA)
-        x_translation = {x:ord(x) - ord("A") for x in list("ABCDEFGH")}
+        
+        x_translation = {x:ord(x) - ord("A")  for x in list("ABCDEFGH")}
         hf_piece_sz = (piece_size[0]//2, piece_size[1]//2)
         for position in board.board:
+            print(position)
             if board.board[position] is not None:
-                center_x = int(x_translation[position[0]]) * 1024//8 + 1024//16
-                center_y = 1024 - 1024//16 - int(position[1]) * 1024//8
-                resized_board[center_y-hf_piece_sz[0]:center_y + hf_piece_sz[0], center_x-hf_piece_sz[1]:center_x+hf_piece_sz[1]] = 0
+                center_x = (int(x_translation[position[0]])) * 1024//8 + 1024//16
+                center_y = 1024 - 1024//16 - (int(position[1]) - 1) * 1024//8
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                cv2.putText(resized_board, 'X', (center_x,center_y), font, 3, (0, 0, 255), 3, cv2.LINE_8)
         cv2.imshow("cv-chessboard", resized_board)
         cv2.waitKey(100000) # kill board image
+      
         
     """
     Returns the ChessPiece at a position, returns None if empty
