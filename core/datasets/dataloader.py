@@ -3,7 +3,15 @@ Upload the dataset
 """
 import numpy as np
 from enum import Enum
+from numpy.core.fromnumeric import resize
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+import cv2
+from time import sleep
+import os
+
 
 # Chessboard tile color enum
 class TileColor(Enum):
@@ -38,6 +46,7 @@ class PieceColor(Enum):
 class Board:
     # Dictionary of {Position : TileColor} values
     CHESS_TILES = {list("ABCDEFGH")[x]+str(y):TileColor((y+x+1)%2+1) for x in range(len(list("ABCDEFGH"))) for y in range(1, 9)} 
+    VISUAL_PATH = r"../../resources/visual"
     def __init__(self):
         self.board = {}
         self.n_pieces = 0
@@ -56,10 +65,29 @@ class Board:
     """
     Visualize chessboard object as an image
     """
-    def print(self):
-        # TODO implement pandas df or matplotlib table  to visualize pieces on board
-        pass
-    
+    def display_board(self):
+        images = {}
+        for filename in os.listdir(self.VISUAL_PATH):
+            img = cv2.imread(os.path.join(self.VISUAL_PATH,filename))
+            if img is not None:
+                images[filename] = img
+        tile_colors = np.zeros(64).reshape(8, 8)
+        tile_colors[1::2, :-1:2] = 1
+        tile_colors[::2, 1::2] = 1
+        resized_board = cv2.resize(tile_colors, (1024, 1024), 0, 0, interpolation=cv2.INTER_NEAREST)
+        offset = 20
+        piece_size = (1024//8-offset, 1024//8-offset)
+        resized_piece = cv2.resize(np.array(images["orange_queen.png"]), piece_size, 0, 0, interpolation = cv2.INTER_AREA)
+        x_translation = {x:ord(x) - ord("A") for x in list("ABCDEFGH")}
+        hf_piece_sz = (piece_size[0]//2, piece_size[1]//2)
+        for position in board.board:
+            if board.board[position] is not None:
+                center_x = int(x_translation[position[0]]) * 1024//8 + 1024//16
+                center_y = 1024 - 1024//16 - int(position[1]) * 1024//8
+                resized_board[center_y-hf_piece_sz[0]:center_y + hf_piece_sz[0], center_x-hf_piece_sz[1]:center_x+hf_piece_sz[1]] = 0
+        cv2.imshow("cv-chessboard", resized_board)
+        cv2.waitKey(100000) # kill board image
+        
     """
     Returns the ChessPiece at a position, returns None if empty
     """
@@ -102,3 +130,4 @@ print(a4.piece_color)
 print("tile color: ",  end='')
 print(board.get_tile_color("a4"))
 
+board.display_board()
