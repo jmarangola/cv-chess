@@ -64,23 +64,17 @@ class Board:
             self.board[key.upper()] = pieces_dict[key]
             
     """
-    Visualize chessboard object as an image
+    Function for visualizing chessboard objects as images
     """
     def display_board(self):
-        images = {}
-        for filename in os.listdir(self.VISUAL_PATH):
-            img = cv2.imread(os.path.join(self.VISUAL_PATH,filename), 1)
-            if img is not None:
-                images[filename] = img
+        # Create base chess board of B/W pixels
         tile_colors = np.zeros(64*3).reshape(8, 8, 3)
         tile_colors[1::2, :-1:2, :] = 1
         tile_colors[::2, 1::2, :] = 1
+        # Scale up board to 1024x1024:
         resized_board = cv2.resize(tile_colors, (1024, 1024), 0, 0, interpolation=cv2.INTER_NEAREST)
-        offset = 20
-        piece_size = (1024//8-offset, 1024//8-offset)
-        resized_piece = cv2.resize(np.array(images["orange_queen.png"]), piece_size, 0, 0, interpolation = cv2.INTER_AREA)
         x_translation = {x:ord(x) - ord("A")  for x in list("ABCDEFGH")}
-        hf_piece_sz = (piece_size[0]//2, piece_size[1]//2)
+        # Labels for visual board
         visual_labels = {
                             PieceType.PAWN: "P",
                             PieceType.KING: "K", 
@@ -88,20 +82,21 @@ class Board:
                             PieceType.BISHOP: "B",
                             PieceType.QUEEN: "Q",
                         }
-        #rgb = lambda h: tuple(int(h[i:i+2], 16) for i in (0, 2, 4)) 
         visual_colors = {PieceColor.ORANGE : (0, 10, 255), PieceColor.BLUE : (255, 0, 0)}
         for position in self.board:
-            print(position)
             if self.board[position] is not None:
                 center_x = (int(x_translation[position[0]])) * 1024//8 + 1024//32
                 center_y = 1024  - (int(position[1]) - 1) * 1024//8 - 1024//32
                 font = cv2.FONT_HERSHEY_SIMPLEX
+                # Label board with proper pieces and colors 
                 if self.board[position].piece_type != PieceType.KNIGHT:
                     cv2.putText(resized_board, visual_labels[self.board[position].piece_type], (center_x,center_y), font, 3, visual_colors[self.board[position].piece_color], 2, cv2.LINE_8)
+                # Knight label has two characters, ensure it is centered
                 else:
                     cv2.putText(resized_board, visual_labels[self.board[position].piece_type], (center_x-35,center_y), font, 3, visual_colors[self.board[position].piece_color], 2, cv2.LINE_8)
         cv2.imshow("cv-chessboard test", resized_board)
-        cv2.waitKey(100000) # kill board image
+        # Wait to kill the board image
+        cv2.waitKey(100000) 
         
     """
     Returns the ChessPiece at a position, returns None if empty
