@@ -62,6 +62,7 @@ class Board:
                 self.n_pieces += 1
             # Add piece to dictionary self.board:
             self.board[key.upper()] = pieces_dict[key]
+            
     """
     Visualize chessboard object as an image
     """
@@ -78,19 +79,29 @@ class Board:
         offset = 20
         piece_size = (1024//8-offset, 1024//8-offset)
         resized_piece = cv2.resize(np.array(images["orange_queen.png"]), piece_size, 0, 0, interpolation = cv2.INTER_AREA)
-        
         x_translation = {x:ord(x) - ord("A")  for x in list("ABCDEFGH")}
         hf_piece_sz = (piece_size[0]//2, piece_size[1]//2)
-        for position in board.board:
+        visual_labels = {
+                            PieceType.PAWN: "P",
+                            PieceType.KING: "K", 
+                            PieceType.KNIGHT: "KN", 
+                            PieceType.BISHOP: "B",
+                            PieceType.QUEEN: "Q",
+                        }
+        #rgb = lambda h: tuple(int(h[i:i+2], 16) for i in (0, 2, 4)) 
+        visual_colors = {PieceColor.ORANGE : (0, 10, 255), PieceColor.BLUE : (255, 0, 0)}
+        for position in self.board:
             print(position)
-            if board.board[position] is not None:
-                center_x = (int(x_translation[position[0]])) * 1024//8 + 1024//16
-                center_y = 1024 - 1024//16 - (int(position[1]) - 1) * 1024//8
+            if self.board[position] is not None:
+                center_x = (int(x_translation[position[0]])) * 1024//8 + 1024//32
+                center_y = 1024  - (int(position[1]) - 1) * 1024//8 - 1024//32
                 font = cv2.FONT_HERSHEY_SIMPLEX
-                cv2.putText(resized_board, 'X', (center_x,center_y), font, 3, (0, 0, 255), 3, cv2.LINE_8)
-        cv2.imshow("cv-chessboard", resized_board)
+                if self.board[position].piece_type != PieceType.KNIGHT:
+                    cv2.putText(resized_board, visual_labels[self.board[position].piece_type], (center_x,center_y), font, 3, visual_colors[self.board[position].piece_color], 2, cv2.LINE_8)
+                else:
+                    cv2.putText(resized_board, visual_labels[self.board[position].piece_type], (center_x-35,center_y), font, 3, visual_colors[self.board[position].piece_color], 2, cv2.LINE_8)
+        cv2.imshow("cv-chessboard test", resized_board)
         cv2.waitKey(100000) # kill board image
-      
         
     """
     Returns the ChessPiece at a position, returns None if empty
@@ -125,7 +136,7 @@ print()
 #
 # Add orange pawn to A4:
 print("Adding orange pawn to A4 and checking again:")
-board.add_pieces({"A4":ChessPiece(PieceType.PAWN, PieceColor.ORANGE)})
+board.add_pieces({"A4":ChessPiece(PieceType.KNIGHT, PieceColor.BLUE)})
 # Get piece at A4 again:
 a4 = board.get_chess_piece("A4")
 print(a4.piece_type)
