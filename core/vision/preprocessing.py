@@ -7,7 +7,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 from pyzbar.pyzbar import decode, ZBarSymbol
 import numpy as np
-
 """
 Split raw image into quadrants
 Return [list] : list of ndarray quadrant images
@@ -98,6 +97,38 @@ def raw_image_to_cropped_boad(nd_image, display_result=True):
         cv2.waitKey(5000)
         
     return nd_image
+
+'''
+given a board, returns a dict where each key is a tile position which is mapped to an image of that tile
+'''
+def cropped_board_to_tiles(img):
+    CHESS_TILES = {}
+    num_rows = img.shape[0]
+    num_cols = img.shape[1]
+    rows_per_tile = num_rows//8
+    cols_per_tile = num_cols//8
+    letters = "ABCDEFGH"
+    for i in range(8):
+        for j in range(1,9):
+            CHESS_TILES[letters[i] + str(j)] = img[i * rows_per_tile : (i + 1) * rows_per_tile, (j - 1) * cols_per_tile : j * cols_per_tile] 
+    return CHESS_TILES
+
+'''
+given an image, generates a random name for it and writes it
+'''
+def img_to_file(img):
+    path = 'f' + "".join(map(str, np.random.permutation(10).tolist())) + ".jpg"
+    cv2.imwrite(path, img)
+
+'''
+given a board, writes 64 files, one for each tile
+'''
+def board_to_64_files(img):
+    CHESS_TILES = {}
+    dict = cropped_board_to_tiles(img)
+    for key in dict.keys():
+        CHESS_TILES[key] = img_to_file(dict[key])
+    return CHESS_TILES
 
 
 #test_image = cv2.imread("qr-board-test.jpg")
