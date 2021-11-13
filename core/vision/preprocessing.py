@@ -1,12 +1,14 @@
 """
-Handle preprocessing for chessboard
+Handle data preprocessing for chessboard images
 """
 import cv2
 import imageio
 import matplotlib
 import matplotlib.pyplot as plt
+from numpy.core.fromnumeric import diagonal
 from pyzbar.pyzbar import decode, ZBarSymbol
 import numpy as np
+
 """
 Split raw image into quadrants
 Return [list] : list of ndarray quadrant images
@@ -37,12 +39,12 @@ def quad_split(nd_image, display=False):
     return result
 
 """
-Returns a diction of QR label:bounding rect pairs. Does not find all qr codes on large images w/ small qr codes
+Returns a diction of QR label:bounding box pairs. Does not find all qr codes on large images w/ small qr codes
 
 Input: nd_image [np.ndarray] - cv2 image representation, labels [tuple, optional] default=("TL", "BL", "TR", "BR", b'https://qrs.ly/y79j33k') - valid qr labels
 Return: corners [dict] - {qr label:(x, y, w, h)} pairs
 """
-def extract_qr(nd_image, labels=(b"TL", b"BL", b"TR", b"BR"), show_bounding_boxes=True):
+def extract_qr_bb(nd_image, labels=(b"TL", b"BL", b"TR", b"BR"), show_bounding_boxes=True):
     # Split image into quadrants:
     resolution = (nd_image.shape[0], nd_image.shape[1])
     (height, width) = resolution
@@ -67,30 +69,93 @@ def extract_qr(nd_image, labels=(b"TL", b"BL", b"TR", b"BR"), show_bounding_boxe
         cv2.imshow("test corners", nd_image)
         cv2.waitKey(5000)
     return corners
-        
+
 """
+TODO
+Returns a dictionary of qr label:polygon pairs
+"""
+def extract_qr_polygon(nd_image, labels=(b"TL", b"BL", b"TR", b"BR"), show_bounding_boxes=True):
+    pass
+    # TODO
+    #
+    # Implement polygon-based board feature extraction 
+    
+    
+"""
+TODO
 Returns the cropped board based on qr codes at 4 corners
 """
-def raw_image_to_cropped_boad(nd_image, display_result=True):
+def cropped_boad_bb(nd_image, display_result=False):
     # Get board top corners from qr codes
-    qr_codes = extract_qr(nd_image, show_bounding_boxes=False)
-    
-    # Bottom right of top left QR:
-    temp = np.array(qr_codes["TL"])
-    tl = np.array((temp[0], temp[1])) + np.array(temp[2], temp[3])
-    # Bottom left of top right QR:
-    temp = np.array(qr_codes["TR"])
-    tr = np.array((temp[0], temp[1])) + np.array(0, temp[3])
-    # Top right of bottom left QR:
-    temp = np.array(qr_codes["BL"])
-    bl = np.array((temp[0], temp[1])) + np.array(temp[2], 0)
-    # Top left of bottom right QR:
-    temp = np.array(qr_codes["BR"])
-    br = np.array((temp[0], temp[1]))
-    
-    # Crop the image:
-    nd_image = nd_image[tl:bl+1, tr:br+1, :] 
+    qr_codes = extract_qr_polygon(nd_image, show_bounding_boxes=False)
 
+    # Localize the board
+    diagonal_pairs = [{b"TL", b"BR"}, {b"TR", b"BL"}]
+    qr_elems = {code for code in qr_codes.keys()}
+    # Ensure that at least one diagonal pair was decoded:
+    if len(qr_codes.keys()) <= 2 and qr_elems.intersection(diagonal_pairs) not in diagonal_pairs:
+        print("<Error> Cannot localize board")
+        return None
+
+    if len(qr_codes.keys()) < 4:
+        # Find the single diagonal pair:
+        intersections = [pair.intersection(qr_elems) for pair in diagonal_pairs]
+        qr_elems = max(intersections)
+        c1 = qr_elems.pop()
+        c2 = qr_elems.pop()
+        # TODO 
+        # 
+        #
+        # Implement transformation and the crop for both sets of diagonal pairs
+        
+    else: # If all four corners of the board were recognized, optimal case
+        pass
+        # TODO 
+        # 
+        #
+        # Impplement linear transformation and crop for four code case
+    
+    # Display the result:
+    if display_result:
+        cv2.imshow("Cropped board", nd_image)
+        cv2.waitKey(5000)
+        
+    return nd_image
+
+"""
+TODO
+Returns the cropped board based on qr codes at 4 corners
+"""
+def cropped_boad_poly(nd_image, display_result=False):
+    # Get board top corners from qr codes
+    qr_codes = extract_qr_polygon(nd_image, show_bounding_boxes=False)
+
+    # Localize the board
+    diagonal_pairs = [{b"TL", b"BR"}, {b"TR", b"BL"}]
+    qr_elems = {code for code in qr_codes.keys()}
+    # Ensure that at least one diagonal pair was decoded:
+    if len(qr_codes.keys()) <= 2 and qr_elems.intersection(diagonal_pairs) not in diagonal_pairs:
+        print("<Error> Cannot localize board")
+        return None
+
+    if len(qr_codes.keys()) < 4:
+        # Find the single diagonal pair:
+        intersections = [pair.intersection(qr_elems) for pair in diagonal_pairs]
+        qr_elems = max(intersections)
+        c1 = qr_elems.pop()
+        c2 = qr_elems.pop()
+        # TODO 
+        # 
+        #
+        # Implement transformation and the crop for both sets of diagonal pairs
+        
+    else: # If all four corners of the board were recognized, optimal case
+        pass
+        # TODO 
+        # 
+        #
+        # Impplement linear transformation and crop for four code case
+    
     # Display the result:
     if display_result:
         cv2.imshow("Cropped board", nd_image)
@@ -132,6 +197,8 @@ def board_to_64_files(img):
 
 
 #test_image = cv2.imread("qr-board-test.jpg")
-test_image = cv2.imread("qr-board-test.jpg")
+#test_image = cv2.imread("qr-board-test.jpg")
+test_image = cv2.imread("test_case_5.jpg")
 
-extract_qr(test_image)
+extract_qr_bb(test_image)
+#raw_image_to_cropped_boad(test_image)
