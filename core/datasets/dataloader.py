@@ -12,7 +12,6 @@ import cv2
 from time import sleep
 import os
 
-
 # Chessboard tile color enum
 class TileColor(Enum):
     BLACK = 1
@@ -110,6 +109,19 @@ class Board:
     """ 
     def get_tile_color(self, position):
         return self.CHESS_TILES[position.upper()]
+    
+    """
+    Return a .csv representation of the board
+    """
+    def to_csv(self):
+        datafr = pd.DataFrame(
+            {   "Position" : [position for position in sorted(self.board.keys())],
+                "Piece Type" : [self.board[position].piece_type.name for position in sorted(self.board.keys())], 
+                "Piece Color" : [self.board[position].piece_color.name for position in sorted(self.board.keys())], 
+                "Tile Color" : [self.get_tile_color(position).name for position in sorted(self.board.keys())]
+            }
+        )
+        return datafr
         
 board = Board()
 board.add_pieces({"e2":ChessPiece(PieceType.PAWN, PieceColor.ORANGE)})
@@ -141,3 +153,4 @@ print("tile color: ",  end='')
 print(board.get_tile_color("a4"))
 
 board.display_board()
+print(board.to_csv())
