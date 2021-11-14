@@ -48,14 +48,11 @@ def extract_qr_bb(nd_image, labels=(b"TL", b"BL", b"TR", b"BR"), show_bounding_b
     # Split image into quadrants:
     resolution = (nd_image.shape[0], nd_image.shape[1])
     (height, width) = resolution
-    print((width, height))
     quadrants = quad_split(nd_image)
     corners = {}
     for quadrant in quadrants:
         codes = decode(quadrant, symbols=[ZBarSymbol.QRCODE])
         for code in codes:
-            print(code.data)
-            print(code.rect)
             # Check if it is one of the QR codes we are looking for
             if code.data in labels:
                 (x, y, w, h) = code.rect
@@ -67,63 +64,41 @@ def extract_qr_bb(nd_image, labels=(b"TL", b"BL", b"TR", b"BR"), show_bounding_b
             (x, y, w, h) = corners[code]
             cv2.rectangle(nd_image, (x, y), (x + w, y + h), (0, 0, 255), 3)
         cv2.imshow("test corners", nd_image)
-        cv2.waitKey(5000)
+        cv2.waitKeyEx()
     return corners
 
 """
-TODO
+TODO Implement visualization
 Returns a dictionary of qr label:polygon pairs
 """
-def extract_qr_polygon(nd_image, labels=(b"TL", b"BL", b"TR", b"BR"), show_bounding_boxes=True):
-    pass
-    # TODO
-    #
-    # Implement polygon-based board feature extraction 
+def extract_qr_polygon(nd_image, labels=(b"TL", b"BL", b"btr", b"BR"), show_bounding_boxes=True):
+    # Split image into quadrants:
+    resolution = (nd_image.shape[0], nd_image.shape[1])
+    (height, width) = resolution
+    print((width, height))
+    quadrants = quad_split(nd_image)
+    corners = {}
+    visual_corners = []
+    for quadrant in quadrants:
+        codes = decode(quadrant, symbols=[ZBarSymbol.QRCODE])
+        for code in codes:
+            bounded_points = {"TL":0, "TR":1, "BL":2, "BR":3} # Critical points for each corner
+            # Check if valid qr
+            if code.data in labels:
+                temp = code.data.decode()
+                print(temp)
+                corners[temp] = (code.polygon[bounded_points[temp]].x, code.polygon[bounded_points[temp]].y)
+                visual_corners.append((code.polygon[bounded_points[temp]].x, code.polygon[bounded_points[temp]].y))
     
+    print(f"corners: {corners}")
+    # Draw bounding boxes and display the result for debugging:
+    if show_bounding_boxes:
+        for code in codes:
+            cv2.rectangle(nd_image, visual_corners[0], visual_corners[1], (0, 0, 255), 3)
+        cv2.imshow("test corners", nd_image)
+        cv2.waitKeyEx()
     
 """
-TODO
-Returns the cropped board based on qr codes at 4 corners
-"""
-def cropped_boad_bb(nd_image, display_result=False):
-    # Get board top corners from qr codes
-    qr_codes = extract_qr_polygon(nd_image, show_bounding_boxes=False)
-
-    # Localize the board
-    diagonal_pairs = [{b"TL", b"BR"}, {b"TR", b"BL"}]
-    qr_elems = {code for code in qr_codes.keys()}
-    # Ensure that at least one diagonal pair was decoded:
-    if len(qr_codes.keys()) <= 2 and qr_elems.intersection(diagonal_pairs) not in diagonal_pairs:
-        print("<Error> Cannot localize board")
-        return None
-
-    if len(qr_codes.keys()) < 4:
-        # Find the single diagonal pair:
-        intersections = [pair.intersection(qr_elems) for pair in diagonal_pairs]
-        qr_elems = max(intersections)
-        c1 = qr_elems.pop()
-        c2 = qr_elems.pop()
-        # TODO 
-        # 
-        #
-        # Implement transformation and the crop for both sets of diagonal pairs
-        
-    else: # If all four corners of the board were recognized, optimal case
-        pass
-        # TODO 
-        # 
-        #
-        # Impplement linear transformation and crop for four code case
-    
-    # Display the result:
-    if display_result:
-        cv2.imshow("Cropped board", nd_image)
-        cv2.waitKey(5000)
-        
-    return nd_image
-
-"""
-TODO
 Returns the cropped board based on qr codes at 4 corners
 """
 def cropped_boad_poly(nd_image, display_result=False):
@@ -159,7 +134,7 @@ def cropped_boad_poly(nd_image, display_result=False):
     # Display the result:
     if display_result:
         cv2.imshow("Cropped board", nd_image)
-        cv2.waitKey(5000)
+        cv2.waitKeyEx()
         
     return nd_image
 
@@ -200,5 +175,5 @@ def board_to_64_files(img):
 #test_image = cv2.imread("qr-board-test.jpg")
 test_image = cv2.imread("test_case_5.jpg")
 
-extract_qr_bb(test_image)
+extract_qr_polygon(test_image)
 #raw_image_to_cropped_boad(test_image)
