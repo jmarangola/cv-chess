@@ -106,30 +106,23 @@ def cropped_boad_poly(nd_image, display_result=False):
     qr_codes = extract_qr_polygon(nd_image, show_bounding_boxes=False)
 
     # Localize the board
-    diagonal_pairs = [{b"TL", b"BR"}, {b"TR", b"BL"}]
+    diagonal_pairs = [{"TL", "BR"}, {"TR", "BL"}]
     qr_elems = {code for code in qr_codes.keys()}
+    
     # Ensure that at least one diagonal pair was decoded:
     if len(qr_codes.keys()) <= 2 and qr_elems.intersection(diagonal_pairs) not in diagonal_pairs:
         print("<Error> Cannot localize board")
         return None
 
-    if len(qr_codes.keys()) < 4:
+    intersections = [pair.intersection(qr_elems) for pair in diagonal_pairs]
+    qr_elems = max(intersections)
+    # Use diagonal pair to get board with reasonable accuracy
+    if len(qr_codes.keys()) == 2:
         # Find the single diagonal pair:
-        intersections = [pair.intersection(qr_elems) for pair in diagonal_pairs]
-        qr_elems = max(intersections)
-        c1 = qr_elems.pop()
-        c2 = qr_elems.pop()
-        # TODO 
-        # 
-        #
-        # Implement transformation and the crop for both sets of diagonal pairs
-        
+        nd_image = nd_image[qr_codes["TL"][0]:qr_codes["BR"][0]+1,qr_codes["TL"][1]:qr_codes["BR"][1]+1,:] if "TL" in qr_elems else nd_image[qr_codes["TR"][0]:qr_codes["BL"][0]+1,qr_codes["TR"][1]:qr_codes["BL"][1]+1,:]
     else: # If all four corners of the board were recognized, optimal case
         pass
-        # TODO 
-        # 
-        #
-        # Impplement linear transformation and crop for four code case
+        # TODO implement
     
     # Display the result:
     if display_result:
