@@ -71,7 +71,7 @@ def extract_qr_bb(nd_image, labels=(b"TL", b"BL", b"TR", b"BR"), show_bounding_b
 TODO Implement visualization
 Returns a dictionary of qr label:polygon pairs
 """
-def extract_qr_polygon(nd_image, labels=(b"TL", b"BL", b"btr", b"BR"), show_bounding_boxes=True):
+def extract_qr_polygon(nd_image, labels=(b"TL", b"BL", b"btr", b"BR"), show_polygons=True):
     # Split image into quadrants:
     resolution = (nd_image.shape[0], nd_image.shape[1])
     (height, width) = resolution
@@ -82,21 +82,21 @@ def extract_qr_polygon(nd_image, labels=(b"TL", b"BL", b"btr", b"BR"), show_boun
     for quadrant in quadrants:
         codes = decode(quadrant, symbols=[ZBarSymbol.QRCODE])
         for code in codes:
-            bounded_points = {"TL":0, "TR":1, "BL":2, "BR":3} # Critical points for each corner
+            poly_indices = {"TL":3, "TR":2, "BL":0, "BR":1} 
+            opposite_ind = {"TL":1, "TR":0, "BL":2, "BR":3} 
             # Check if valid qr
+            temp = code.data.decode()
             if code.data in labels:
-                temp = code.data.decode()
-                print(temp)
-                corners[temp] = (code.polygon[bounded_points[temp]].x, code.polygon[bounded_points[temp]].y)
-                visual_corners.append((code.polygon[bounded_points[temp]].x, code.polygon[bounded_points[temp]].y))
-    
-    print(f"corners: {corners}")
+                corners[temp] = (code.polygon[opposite_ind[temp]].x, code.polygon[opposite_ind[temp]].y)
+            if show_polygons:
+                cv2.rectangle(nd_image, (code.polygon[0].x, code.polygon[0].y), (code.polygon[2].x, code.polygon[2].y), (0, 0, 255), 3)
+            
     # Draw bounding boxes and display the result for debugging:
-    if show_bounding_boxes:
-        for code in codes:
-            cv2.rectangle(nd_image, visual_corners[0], visual_corners[1], (0, 0, 255), 3)
+    if show_polygons:
         cv2.imshow("test corners", nd_image)
         cv2.waitKeyEx()
+        
+    return corners
     
 """
 Returns the cropped board based on qr codes at 4 corners
