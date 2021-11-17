@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 from numpy.core.fromnumeric import diagonal
 from pyzbar.pyzbar import decode, ZBarSymbol
 import numpy as np
+from os.path import isfile, join
+import os 
 
 """
 Split raw image into quadrants
@@ -63,7 +65,7 @@ def extract_qr_bb(nd_image, labels=(b"TL", b"BL", b"TR", b"BR"), show_bounding_b
         for code in corners:
             (x, y, w, h) = corners[code]
             cv2.rectangle(nd_image, (x, y), (x + w, y + h), (0, 0, 255), 3)
-        cv2.imshow("test corners", nd_image)
+        cv2.imshow("Test Corners", nd_image)
         cv2.waitKeyEx()
     return corners
 
@@ -73,6 +75,9 @@ Returns a dictionary of qr label:polygon pairs
 """
 def extract_qr_polygon(nd_image, labels=(b"TL", b"BL", b"btr", b"BR"), show_polygons=True):
     # Split image into quadrants:
+    if nd_image is None:
+        print("image not found.")
+        return None
     resolution = (nd_image.shape[0], nd_image.shape[1])
     (height, width) = resolution
     print((width, height))
@@ -82,8 +87,8 @@ def extract_qr_polygon(nd_image, labels=(b"TL", b"BL", b"btr", b"BR"), show_poly
     for quadrant in quadrants:
         codes = decode(quadrant, symbols=[ZBarSymbol.QRCODE])
         for code in codes:
-            poly_indices = {"TL":3, "TR":2, "BL":0, "BR":1} 
-            opposite_ind = {"TL":1, "TR":0, "BL":2, "BR":3} 
+            poly_indices = {"TL":3, "btr":2, "BL":0, "BR":1} 
+            opposite_ind = {"TL":1, "btr":0, "BL":2, "BR":3} 
             # Check if valid qr
             temp = code.data.decode()
             if code.data in labels:
@@ -101,31 +106,43 @@ def extract_qr_polygon(nd_image, labels=(b"TL", b"BL", b"btr", b"BR"), show_poly
 """
 Returns the cropped board based on qr codes at 4 corners
 """
-def cropped_boad_poly(nd_image, display_result=False):
+def cropped_boad_poly(nd_image, display_result=False, crop_pad=(0, 0)):
     # Get board top corners from qr codes
-    qr_codes = extract_qr_polygon(nd_image, show_bounding_boxes=False)
+    if nd_image is None:
+        print("image not found.")
+        return None
+    original_image = nd_image.copy()
+    qr_codes = extract_qr_polygon(nd_image, show_polygons=False)
 
     # Localize the board
     diagonal_pairs = [{"TL", "BR"}, {"TR", "BL"}]
     qr_elems = {code for code in qr_codes.keys()}
     
     # Ensure that at least one diagonal pair was decoded:
-    if len(qr_codes.keys()) <= 2 and qr_elems.intersection(diagonal_pairs) not in diagonal_pairs:
+    if len(qr_codes.keys()) <= 2 and qr_elems.intersection(diagonal_pairs[0]) not in diagonal_pairs and qr_elems.intersection(diagonal_pairs[1]) not in diagonal_pairs:
         print("<Error> Cannot localize board")
         return None
 
     intersections = [pair.intersection(qr_elems) for pair in diagonal_pairs]
     qr_elems = max(intersections)
     # Use diagonal pair to get board with reasonable accuracy
-    if len(qr_codes.keys()) == 2:
+    if len(qr_codes.keys()) < 4:
         # Find the single diagonal pair:
-        nd_image = nd_image[qr_codes["TL"][0]:qr_codes["BR"][0]+1,qr_codes["TL"][1]:qr_codes["BR"][1]+1,:] if "TL" in qr_elems else nd_image[qr_codes["TR"][0]:qr_codes["BL"][0]+1,qr_codes["TR"][1]:qr_codes["BL"][1]+1,:]
-    else: # If all four corners of the board were recognized, optimal case
-        pass
-        # TODO implement
-    
+        print("TL") if "TL" in qr_elems else "TR"
+        nd_image = nd_image[qr_codes["TL"][1]:qr_codes["BR"][1]+1,qr_codes["TL"][0]:qr_codes["BR"][0]+1,:] if "TL" in qr_elems else nd_image[qr_codes["TR"][1]:qr_codes["BL"][1]+1,qr_codes["TR"][0]:qr_codes["BL"][0]+1,:]
+    else:   # Use diagonal pairings for better accuracy if 4 points have been found
+        nd_image = nd_image[qr_codes["TL"][1]:qr_codes["BR"][1]+1, qr_codes["TR"][0]:qr_codes["BL"][0]+1, :]
+        
     # Display the result:
     if display_result:
+        figure, axes = plt.subplots(nrows=1, ncols=2)
+        axes[0].imshow(original_image)
+        axes[0].set_title("Original")
+        axes[1].imshow(nd_image)
+        axes[1].set_title("Cropped Version")
+        figure.tight_layout()
+        plt.show()
+        plt.waitforbuttonpress()
         cv2.imshow("Cropped board", nd_image)
         cv2.waitKeyEx()
         
@@ -163,10 +180,15 @@ def board_to_64_files(img):
         CHESS_TILES[key] = img_to_file(dict[key])
     return CHESS_TILES
 
+def delete_board2_64_output():
+    files = [f for f in os.listdir(os.getcwd()) if isfile(os.path.join(os.getcwd(), f))]
+    for file in files:
+        if file[-4:] == ".jpg" and file[0] == "f":
+            os.remove(file)
 
-#test_image = cv2.imread("qr-board-test.jpg")
-#test_image = cv2.imread("qr-board-test.jpg")
-test_image = cv2.imread("test_case_5.jpg")
+test_image = cv2.imread("test_case_3.jpg")
+#test_image = cv2.imread("test_case_3.jpg")
 
-extract_qr_polygon(test_image)
-#raw_image_to_cropped_boad(test_image)
+cropped = cropped_boad_poly(test_image, display_result=True)
+delete_board2_64_output()
+#extract_qr_polygon(test_image)
