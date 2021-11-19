@@ -49,7 +49,7 @@ images = np.hstack((bg_removed, depth_colormap))
 cv2.namedWindow('Align Example', cv2.WINDOW_AUTOSIZE)
 
 # Filename 
-path = 'C:/Users/aatefi2/Desktop/Intel real sense/Codes/'
+# path = ''
 imageName1 = str(time.strftime("%Y_%m_%d_%H_%M_%S")) +  '_Color.jpg'
 imageName2 = str(time.strftime("%Y_%m_%d_%H_%M_%S")) +  '_Depth.jpg'
 imageName3 = str(time.strftime("%Y_%m_%d_%H_%M_%S")) +  '_bg_removed.jpg'
