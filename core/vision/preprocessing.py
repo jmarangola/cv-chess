@@ -80,20 +80,23 @@ def extract_qr_polygon(nd_image, labels=(b"TL", b"BL", b"btr", b"BR"), show_poly
     resolution = (nd_image.shape[0], nd_image.shape[1])
     (height, width) = resolution
     print((width, height))
-    quadrants = quad_split(nd_image)
+    #quadrants = quad_split(nd_image)
     corners = {}
     visual_corners = []
-    for quadrant in quadrants:
-        codes = decode(quadrant, symbols=[ZBarSymbol.QRCODE])
-        for code in codes:
-            poly_indices = {"TL":3, "btr":2, "BL":0, "BR":2} 
-            opposite_ind = {"TL":2, "btr":0, "BL":2, "BR":0} 
-            # Check if valid qr
-            temp = code.data.decode()
-            if code.data in labels:
-                corners[temp] = (code.polygon[opposite_ind[temp]].x, code.polygon[opposite_ind[temp]].y)
-            if show_polygons:
-                cv2.rectangle(nd_image, (code.polygon[0].x, code.polygon[0].y), (code.polygon[2].x, code.polygon[2].y), (0, 0, 255), 3)
+    #for quadrant in quadrants:
+
+    #codes = decode(quadrant, symbols=[ZBarSymbol.QRCODE])
+    codes = decode(nd_image, symbols=[ZBarSymbol.QRCODE])
+    print(codes)
+    for code in codes:
+        poly_indices = {"TL":3, "btr":2, "BL":0, "BR":2} 
+        opposite_ind = {"TL":2, "btr":0, "BL":2, "BR":0} 
+        # Check if valid qr
+        temp = code.data.decode()
+        if code.data in labels:
+            corners[temp] = (code.polygon[opposite_ind[temp]].x, code.polygon[opposite_ind[temp]].y)
+        if show_polygons:
+            cv2.rectangle(nd_image, (code.polygon[0].x, code.polygon[0].y), (code.polygon[2].x, code.polygon[2].y), (0, 0, 255), 3)
         
         
     # Draw bounding boxes and display the result for debugging:
@@ -118,7 +121,6 @@ def get_four_corners(nd_image, display_corners=False, display_color=255):
     if len(decoded.keys()) == 4:
         output = [[decoded["TL"][0], decoded["TL"][1]], [decoded["TR"][0], decoded["TR"][1]], [decoded["BL"][0], decoded["BL"][1]], [decoded["BR"][0], decoded["BR"][1]]] 
     else:    
-        print("gere")
         if ("TL" in decoded.keys() and "BR" in decoded.keys()):
             output =  [[decoded["TL"][0], decoded["TL"][1]], [decoded["BR"][0], decoded["BR"][1]]]
         else:
@@ -222,11 +224,10 @@ def delete_board2_64_output():
         if file[-4:] == ".jpg" and file[0] == "f":
             os.remove(file)
 
-test_image = cv2.imread("qr-board-test.jpg")
-if test_image is None: print("NOT A VALID TEST IMAGE")
-else: get_four_corners(test_image, display_corners=True)
+test_image = cv2.imread("/Users/johnmarangola/Desktop/repos/cv-chess/core/vision/imtest3.jpg")
+#imtest , imtest1, imtest2 imtest3
+extract_qr_polygon(test_image, show_polygons=True)
 
-#test_image = cv2.imread("test_case_3.jpg")
 #cropped = cropped_boad_poly(test_image, display_result=True)
 #board_to_64_files(cropped)
 #delete_board2_64_output()
