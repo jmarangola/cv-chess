@@ -65,7 +65,7 @@ class Board:
     """
     Function for visualizing chessboard objects as images
     """
-    def display_board(self):
+    def display_board(self, dest=None):
         # Create base chess board of B/W pixels
         tile_colors = np.zeros(64*3).reshape(8, 8, 3)
         tile_colors[1::2, :-1:2, :] = 1
@@ -81,7 +81,7 @@ class Board:
                             PieceType.BISHOP: "B",
                             PieceType.QUEEN: "Q",
                         }
-        visual_colors = {PieceColor.ORANGE : (0, 10, 255), PieceColor.BLUE : (255, 0, 0)}
+        visual_colors = {PieceColor.ORANGE : (0, 160, 255), PieceColor.BLUE : (255, 0, 0)}
         for position in self.board:
             if self.board[position] is not None:
                 center_x = (int(x_translation[position[0]])) * 1024//8 + 1024//32
@@ -93,9 +93,12 @@ class Board:
                 # Knight label has two characters, ensure it is centered
                 else:
                     cv2.putText(resized_board, visual_labels[self.board[position].piece_type], (center_x-35,center_y), font, 3, visual_colors[self.board[position].piece_color], 2, cv2.LINE_8)
-        cv2.imshow("cv-chessboard test", resized_board)
-        # Wait to kill the board image
-        cv2.waitKey(100000) 
+        if dest is None:
+            cv2.imshow("cv-chessboard test", resized_board)
+            # Wait to kill the board image
+            cv2.waitKey(100000) 
+        else:
+            cv2.imwrite(dest, 255*resized_board)
         
     """
     Returns the ChessPiece at a position, returns None if empty

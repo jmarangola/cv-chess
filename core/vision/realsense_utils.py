@@ -117,11 +117,14 @@ class RealSenseCamera:
         Args:
             dest ([type], optional): Path of .txt file storing board coordinates. Defaults to SETUP_DEST.
         """
-        self.corner_positions = []
-        with open(dest, "r") as setup:
-            for line in setup.readlines():
-                ln_int = list(map(int, line.strip().split()))
-                self.corner_positions.append([ln_int[0], ln_int[1]])
+        self.corner_positions = None
+        try:
+            with open(dest, "r") as setup:
+                for line in setup.readlines():
+                    ln_int = list(map(int, line.strip().split()))
+                    self.corner_positions.append([ln_int[0], ln_int[1]])
+        except:
+            print(f"Could not find {dest}")
     
     def get_board_corners(self):
         """
