@@ -2,7 +2,6 @@
 Handle data preprocessing for chessboard images
 """
 import cv2
-import imageio
 import matplotlib
 import matplotlib.pyplot as plt
 from numpy.core.fromnumeric import diagonal
@@ -72,7 +71,7 @@ def extract_qr_bb(nd_image, labels=(b"TL", b"BL", b"TR", b"BR"), show_bounding_b
 """
 Returns a dictionary of qr label:polygon pairs
 """
-def extract_qr_polygon(nd_image, labels=(b"TL", b"BL", b"btr", b"BR"), show_polygons=True):
+def extract_qr_polygon(nd_image, labels=(b"TL", b"BL", b"TR", b"BR"), show_polygons=True):
     # Split image into quadrants:
     if nd_image is None:
         print("image not found.")
@@ -92,9 +91,7 @@ def extract_qr_polygon(nd_image, labels=(b"TL", b"BL", b"btr", b"BR"), show_poly
             temp = code.data.decode()
             if code.data in labels:
                 corners[temp] = (code.polygon[opposite_ind[temp]].x, code.polygon[opposite_ind[temp]].y)
-            if show_polygons:
                 cv2.rectangle(nd_image, (code.polygon[0].x, code.polygon[0].y), (code.polygon[2].x, code.polygon[2].y), (0, 0, 255), 3)
-        
         
     # Draw bounding boxes and display the result for debugging:
     if show_polygons:
@@ -222,9 +219,10 @@ def delete_board2_64_output():
         if file[-4:] == ".jpg" and file[0] == "f":
             os.remove(file)
 
-test_image = cv2.imread("qr-board-test.jpg")
-if test_image is None: print("NOT A VALID TEST IMAGE")
-else: get_four_corners(test_image, display_corners=True)
+test_image = cv2.imread("testfile.jpg") 
+extract_qr_polygon(test_image)
+#if test_image is None: print("NOT A VALID TEST IMAGE")
+#else: get_four_corners(test_image, display_corners=True)
 
 #test_image = cv2.imread("test_case_3.jpg")
 #cropped = cropped_boad_poly(test_image, display_result=True)
