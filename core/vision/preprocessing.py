@@ -79,7 +79,7 @@ def extract_qr_polygon(nd_image, labels=(b"TL", b"BL", b"TR", b"BR"), show_polyg
     resolution = (nd_image.shape[0], nd_image.shape[1])
     (height, width) = resolution
     print((width, height))
-    quadrants = quad_split(nd_image)
+    #quadrants = quad_split(nd_image)
     corners = {}
     visual_corners = []
     for quadrant in quadrants:
@@ -115,7 +115,6 @@ def get_four_corners(nd_image, display_corners=False, display_color=255):
     if len(decoded.keys()) == 4:
         output = [[decoded["TL"][0], decoded["TL"][1]], [decoded["TR"][0], decoded["TR"][1]], [decoded["BL"][0], decoded["BL"][1]], [decoded["BR"][0], decoded["BR"][1]]] 
     else:    
-        print("gere")
         if ("TL" in decoded.keys() and "BR" in decoded.keys()):
             output =  [[decoded["TL"][0], decoded["TL"][1]], [decoded["BR"][0], decoded["BR"][1]]]
         else:
@@ -224,7 +223,6 @@ extract_qr_polygon(test_image)
 #if test_image is None: print("NOT A VALID TEST IMAGE")
 #else: get_four_corners(test_image, display_corners=True)
 
-#test_image = cv2.imread("test_case_3.jpg")
 #cropped = cropped_boad_poly(test_image, display_result=True)
 #board_to_64_files(cropped)
 #delete_board2_64_output()
