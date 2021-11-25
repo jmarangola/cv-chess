@@ -217,13 +217,36 @@ def delete_board2_64_output():
     for file in files:
         if file[-4:] == ".jpg" and file[0] == "f":
             os.remove(file)
+            
+def warp(img, corners):
+    """
+    Warp img by applying perspective transform based on the positions of four chessboard corners (found during calibration)
 
-test_image = cv2.imread("testfile.jpg") 
-extract_qr_polygon(test_image)
-#if test_image is None: print("NOT A VALID TEST IMAGE")
-#else: get_four_corners(test_image, display_corners=True)
+    Args:
+        img (ndarray): input image
+        corners (list): [description]
 
-#cropped = cropped_boad_poly(test_image, display_result=True)
-#board_to_64_files(cropped)
-#delete_board2_64_output()
-#extract_qr_polygon(test_image)
+    Returns:
+        ndarray: warped output
+    """
+    img = cv2.imread('test_case_3.jpg',0)
+    img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
+    pt_A, pt_B, pt_C, pt_D = corners[0], corners[1], corners[2], corners[3]
+ 
+    width_AD = np.sqrt(((pt_A[0] - pt_D[0]) ** 2) + ((pt_A[1] - pt_D[1]) ** 2))
+    width_BC = np.sqrt(((pt_B[0] - pt_C[0]) ** 2) + ((pt_B[1] - pt_C[1]) ** 2))
+    maxWidth = max(int(width_AD), int(width_BC))
+    height_AB = np.sqrt(((pt_A[0] - pt_B[0]) ** 2) + ((pt_A[1] - pt_B[1]) ** 2))
+    height_CD = np.sqrt(((pt_C[0] - pt_D[0]) ** 2) + ((pt_C[1] - pt_D[1]) ** 2))
+    maxHeight = max(int(height_AB), int(height_CD))
+
+    input_pts = np.float32([pt_A, pt_B, pt_C, pt_D])
+    output_pts = np.float32([[0, 0],
+                            [0, maxHeight - 1],
+                            [maxWidth - 1, maxHeight - 1],
+                            [maxWidth - 1, 0]])
+
+    M = cv2.getPerspectiveTransform(input_pts,output_pts)
+    out = cv2.warpPerspective(img,M,(maxWidth, maxHeight),flags=cv2.INTER_LINEAR)
+    return out
+
