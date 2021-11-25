@@ -1,6 +1,7 @@
 """
 Autonomously collection of data for jetson nano
 """
+import cv2
 from realsense_utils import RealSenseCamera
 import preprocessing as pr
 
@@ -17,8 +18,8 @@ if __name__ == "__main__":
     while input() != "exit":
         img = realsense.capture_rgb_image()
         img = pr.warp(img, realsense.corner_positions)
-        
-        fl = pr.board_to_64_files(img)
+        cv2.imwrite("tmp/test.jpg", img)
+        #fl = pr.board_to_64_files(img)
         
     # Close streams and end pipeline
     realsense.stop_pipeline()

@@ -131,10 +131,3 @@ class RealSenseCamera:
             list: List of four board corners for configuration that has been pre-calibrated
         """
         return self.corner_positions
-
-    
-
-
-
-    
-        
