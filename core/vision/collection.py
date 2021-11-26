@@ -3,16 +3,24 @@ Autonomously collection of data for jetson nano
 """
 
 import datasets
+import json
 from datasets import Board, ChessPiece, PieceColor, PieceType
 from realsense_utils import RealSenseCamera
 import preprocessing as pr
 import cv2
 import pandas as pd
+import os 
+from os.path import isfile, join
 
-RUN_CALIBRATION = False
-BOARD_SAVE_DEST= r"board_metadata.jpeg"
+RUN_CALIBRATION = False # Run calibration sequence or use preexisting board four corners data from config/setup.txt
+BOARD_SAVE_DEST= r"board_metadata.jpeg" # Where the debug metadata board visualization image is saved (to ensure we properly setup the metadata)
+TMP_DEST = "/home/spark/cv-chess/core/vision/tmp/" # Where images are temporarily saved before being uploaded to drive in a batch
+LOCAL_MD_FILENAME = "local_meta.json"
+LOCAL_METADATA_JSON_PATH = TMP_DEST + LOCAL_MD_FILENAME
+
 
 if __name__ == "__main__":
+    # Initialize camera
     realsense = RealSenseCamera()
     
     """
@@ -36,13 +44,38 @@ if __name__ == "__main__":
         print("Exiting...")
         realsense.stop_pipeline()
         exit()
+    files = []
+    files = [f for f in os.listdir(TMP_DEST) if isfile(os.path.join(TMP_DEST, f))]
+    # Check to see if there is pre-existing .csv metadata to add to 
+    if LOCAL_MD_FILENAME in files:
+        total_metadata = pd.read_csv(LOCAL_METADATA_JSON_PATH)
+    else:
+        total_metadata = pd.DataFrame()
     # Loop through input 
     while input() != "exit":
-        pass
-        #img = realsense.capture_rgb_image()
-        #img = pr.warp(img, realsense.corner_positions)
-        #cv2.imwrite("tmp/test.jpg", img)
-
+        img = realsense.capture_rgb_image() # Capture the image 
+        #img = pr.warp(img, realsense.corner_positions) # warp
+        files = pr.board_to_64_files(img, base_directory=TMP_DEST) # Break image up into 64 files 
+        piece_types, piece_colors = [], []
+        for tile in sorted(files.keys()):
+            temp = board_meta.get_chess_piece(tile)
+            if temp is None:
+                piece_types.append(None)
+                piece_colors.append(None)
+            else:
+                piece_types.append(temp.piece_type.name)
+                piece_colors.append(temp.piece_color.name)
+        tmp_meta = pd.DataFrame({
+            "File" : [files[file] for file in sorted(files.keys())],
+            "Position" : [file for file in sorted(files.keys())],
+            "Piece Type" : piece_types,
+            "Piece Color" : piece_colors
+        })
+        frames = [total_metadata, tmp_meta]
+        total_metadata = pd.concat(frames) # Concatenate dataframes
+        print(total_metadata)
+    total_metadata.to_csv(path_or_buf=LOCAL_METADATA_JSON_PATH)
+    pr.delete_board2_64_output(base_directory=TMP_DEST)
         
     # Close streams and end pipeline
     realsense.stop_pipeline()

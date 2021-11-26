@@ -79,7 +79,7 @@ def extract_qr_polygon(nd_image, labels=(b"TL", b"BL", b"TR", b"BR"), show_polyg
     resolution = (nd_image.shape[0], nd_image.shape[1])
     (height, width) = resolution
     print((width, height))
-    #quadrants = quad_split(nd_image)
+    quadrants = quad_split(nd_image)
     corners = {}
     visual_corners = []
     for quadrant in quadrants:
@@ -190,33 +190,45 @@ def cropped_board_to_tiles(img):
     for i in range(8):
         for j in range(1,9):
             CHESS_TILES[letters[i] + str(j)] = img[i * rows_per_tile : (i + 1) * rows_per_tile, (j - 1) * cols_per_tile : j * cols_per_tile] 
+    print(CHESS_TILES["A1"])
     return CHESS_TILES
 
 '''
 given an image, generates a random name for it and writes it
 '''
-def img_to_file(img):
-    path = 'f' + "".join(map(str, np.random.permutation(10).tolist())) + ".jpg"
+def img_to_file(img, base_directory=None):
+    if base_directory is None:
+        path = 'f' + "".join(map(str, np.random.permutation(10).tolist())) + ".jpg"
+    else: 
+        path = base_directory + 'f' + "".join(map(str, np.random.permutation(10).tolist())) + ".jpg"
     cv2.imwrite(path, img)
+    return path
 
 '''
 given a board, writes 64 files, one for each tile
 '''
-def board_to_64_files(img):
+def board_to_64_files(img, base_directory=None):
     CHESS_TILES = {}
+    filenames = {}
     dict = cropped_board_to_tiles(img)
     for key in dict.keys():
-        CHESS_TILES[key] = img_to_file(dict[key])
+        CHESS_TILES[key] = img_to_file(dict[key], base_directory=base_directory)
     return CHESS_TILES
 
 """
 Delete all the output .jpgs saved by board_to_64_tiles(img) 
 """
-def delete_board2_64_output():
-    files = [f for f in os.listdir(os.getcwd()) if isfile(os.path.join(os.getcwd(), f))]
-    for file in files:
-        if file[-4:] == ".jpg" and file[0] == "f":
-            os.remove(file)
+def delete_board2_64_output(base_directory=None):
+    if base_directory is None:
+        files = [f for f in os.listdir(os.getcwd()) if isfile(os.path.join(os.getcwd(), f))]
+        for file in files:
+            if file[-4:] == ".jpg" and file[0] == "f":
+                os.remove(file)
+    else:
+        files = [f for f in os.listdir(base_directory) if isfile(os.path.join(base_directory, f))]
+        for file in files:
+            if file[-4:] == ".jpg" and file[0] == "f":
+                os.remove(base_directory + file)
             
 def warp(img, corners):
     """

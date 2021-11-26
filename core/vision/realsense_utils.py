@@ -51,7 +51,6 @@ class RealSenseCamera:
         aligned_frames = align.process(frames)
         color_frame = aligned_frames.get_color_frame()
         color_image = np.asanyarray(color_frame.get_data())
-        self.pipeline.stop()
         # Saving the image
         if dest is not None:
             try:
@@ -59,7 +58,7 @@ class RealSenseCamera:
                 cv2.imwrite(dest + imageName1, color_image)
             except:
                 print(f"realsense_utils could not save as {dest}.")
-            return color_image
+        return color_image
 
     def find_device_that_supports_advanced_mode():
         """
