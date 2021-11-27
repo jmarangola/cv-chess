@@ -110,8 +110,7 @@ if __name__ == "__main__":
     BASE_PATH = "/Users/johnmarangola/Desktop/repos/cv-chess/core/vision/tmp/"
     
     # Load pandas dataframe from local:
-    #local_meta = pd.from_csv(BASE_PATH + "local_meta.csv")
-    local_meta = pd.DataFrame()
+    local_meta = pd.read_csv(r"tmp/local_meta.json")
     im_upload = []
     for file in os.listdir(BASE_PATH):
         if file.endswith(".jpg") and file[0] == "f":
@@ -121,9 +120,20 @@ if __name__ == "__main__":
         file.SetContentFile(BASE_PATH + filename)
         file.Upload()
         id = file["id"]
+        temp = local_meta.index[local_meta["File"]==filename].tolist()
+        print(local_meta)
+        print(local_meta["File"].tolist())
         # Add drive file id to meta_data csv
-        local_meta["id"][filename] = id
-    # dump the csv
+        if len(temp) != 1:
+            print("Exiting, input .csv not properly formatted")
+            break
+        row = temp[0]
+        local_meta.at[row, "ID"] = id
+        print(f"uploading {filename} to {id}...")
+    # Upload metadata to google drive
+    metadata = drive.CreateFile()
+    metadata.SetContentFile(BASE_PATH + "local_meta.json")
+    metadata.Upload()
     
 
 
