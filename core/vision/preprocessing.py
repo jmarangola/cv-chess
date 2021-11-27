@@ -201,7 +201,7 @@ def img_to_file(img, base_directory=None):
     if base_directory is None:
         wpath = name
     else: 
-        wpath = base_directory + 'f' + "".join(map(str, np.random.permutation(10).tolist())) + ".jpg"
+        wpath = base_directory + name
     cv2.imwrite(wpath, img)
     return name
 
