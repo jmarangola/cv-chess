@@ -78,7 +78,7 @@ if __name__ == "__main__":
         total_metadata = pd.concat(frames) # Concatenate dataframes
         print(total_metadata)
     total_metadata.to_csv(path_or_buf=LOCAL_METADATA_JSON_PATH)
-    pr.delete_board2_64_output(base_directory=TMP_DEST)
+    #pr.delete_board2_64_output(base_directory=TMP_DEST)
         
     # Close streams and end pipeline
     realsense.stop_pipeline()
