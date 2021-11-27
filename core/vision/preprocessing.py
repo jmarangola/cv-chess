@@ -197,12 +197,13 @@ def cropped_board_to_tiles(img):
 given an image, generates a random name for it and writes it
 '''
 def img_to_file(img, base_directory=None):
+    name = 'f' + "".join(map(str, np.random.permutation(10).tolist())) + ".jpg"
     if base_directory is None:
-        path = 'f' + "".join(map(str, np.random.permutation(10).tolist())) + ".jpg"
+        wpath = name
     else: 
-        path = base_directory + 'f' + "".join(map(str, np.random.permutation(10).tolist())) + ".jpg"
-    cv2.imwrite(path, img)
-    return path
+        wpath = base_directory + 'f' + "".join(map(str, np.random.permutation(10).tolist())) + ".jpg"
+    cv2.imwrite(wpath, img)
+    return name
 
 '''
 given a board, writes 64 files, one for each tile

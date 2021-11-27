@@ -2,6 +2,9 @@ from oauth2client.client import GoogleCredentials
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 from oauth2client.client import GoogleCredentials
+import json
+import os 
+import pandas as pd
 
 def get_id(drive, name):
     """
@@ -77,8 +80,16 @@ def add_sub_directory(drive, parent_id, sub_dir):
     sub_dir.Upload()
     return sub_dir['id']
 
+def upload_new_dataset(drive, dataset_name):
+    pass
+
+def add_to_existing_dataset(drive, dataset_name):
+    pass
+
 if __name__ == "__main__":
+    # Run authentication:
     gauth = GoogleAuth()
+    os.chdir("core/vision/")
     # Try to load saved client credentials
     gauth.LoadCredentialsFile("mycreds.txt")
     if gauth.credentials is None:
@@ -92,10 +103,29 @@ if __name__ == "__main__":
         gauth.Authorize()
     # Save the current credentials to a file
     gauth.SaveCredentialsFile("mycreds.txt")
-
+    # Create drive object
     drive = GoogleDrive(gauth)
 
-    textfile = drive.CreateFile()
-    textfile.SetContentFile('eng.txt')
-    textfile.Upload()
-    print(textfile)
+    # Change to path of tmp dir! 
+    BASE_PATH = "/Users/johnmarangola/Desktop/repos/cv-chess/core/vision/tmp/"
+    
+    # Load pandas dataframe from local:
+    #local_meta = pd.from_csv(BASE_PATH + "local_meta.csv")
+    local_meta = pd.DataFrame()
+    im_upload = []
+    for file in os.listdir(BASE_PATH):
+        if file.endswith(".jpg") and file[0] == "f":
+            im_upload.append(file)
+    for filename in im_upload: # upload the images to drive
+        file = drive.CreateFile()   
+        file.SetContentFile(BASE_PATH + filename)
+        file.Upload()
+        id = file["id"]
+        # Add drive file id to meta_data csv
+        local_meta["id"][filename] = id
+    # dump the csv
+    
+
+
+    #drive.CreateFile({'id':textfile['id']}).GetContentFile('eng-dl.txt')
+    
