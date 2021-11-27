@@ -76,3 +76,26 @@ def add_sub_directory(drive, parent_id, sub_dir):
     sub_dir = drive.CreateFile({'title':sub_dir,"parents":[{'id':parent_id}],'mimeType':"application/vnd.google-apps.folder"})
     sub_dir.Upload()
     return sub_dir['id']
+
+if __name__ == "__main__":
+    gauth = GoogleAuth()
+    # Try to load saved client credentials
+    gauth.LoadCredentialsFile("mycreds.txt")
+    if gauth.credentials is None:
+        # Authenticate if they're not there
+        gauth.LocalWebserverAuth()
+    elif gauth.access_token_expired:
+        # Refresh them if expired
+        gauth.Refresh()
+    else:
+        # Initialize the saved creds
+        gauth.Authorize()
+    # Save the current credentials to a file
+    gauth.SaveCredentialsFile("mycreds.txt")
+
+    drive = GoogleDrive(gauth)
+
+    textfile = drive.CreateFile()
+    textfile.SetContentFile('eng.txt')
+    textfile.Upload()
+    print(textfile)

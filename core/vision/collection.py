@@ -48,7 +48,10 @@ if __name__ == "__main__":
     files = [f for f in os.listdir(TMP_DEST) if isfile(os.path.join(TMP_DEST, f))]
     # Check to see if there is pre-existing .csv metadata to add to 
     if LOCAL_MD_FILENAME in files:
-        total_metadata = pd.read_csv(LOCAL_METADATA_JSON_PATH)
+        try:
+            total_metadata = pd.read_csv(LOCAL_METADATA_JSON_PATH)
+        except:
+            total_metadata = pd.DataFrame()
     else:
         total_metadata = pd.DataFrame()
     # Loop through input 
@@ -75,7 +78,7 @@ if __name__ == "__main__":
         total_metadata = pd.concat(frames) # Concatenate dataframes
         print(total_metadata)
     total_metadata.to_csv(path_or_buf=LOCAL_METADATA_JSON_PATH)
-    pr.delete_board2_64_output(base_directory=TMP_DEST)
+    #pr.delete_board2_64_output(base_directory=TMP_DEST)
         
     # Close streams and end pipeline
     realsense.stop_pipeline()
