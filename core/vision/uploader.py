@@ -1,10 +1,19 @@
-from oauth2client.client import GoogleCredentials
+
+
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
-from oauth2client.client import GoogleCredentials
-import json
-import os 
+from tqdm import tqdm
 import pandas as pd
+import queue
+import sys
+import os
+from time import perf_counter
+TMP_DEST = "/home/spark/cv-chess/core/vision/tmp/" # Where images are temporarily saved before being uploaded to drive in a batch
+LOCAL_MD_FILENAME = "local_meta.json"
+LOCAL_METADATA_JSON_PATH = TMP_DEST + LOCAL_MD_FILENAME
+
+from concurrent.futures import ThreadPoolExecutor
+from time import perf_counter
 
 def get_id(drive, name):
     """
@@ -86,6 +95,24 @@ def upload_new_dataset(drive, dataset_name):
 def add_to_existing_dataset(drive, dataset_name):
     pass
 
+def push_to_drive(filename, q):
+    file = drive.CreateFile()   
+    file.SetContentFile(filename)
+    file.Upload()
+    id = file["id"]
+    temp = local_meta.index[local_meta["File"]==filename].tolist()
+    #print(local_meta)
+    #print(local_meta["File"].tolist())
+    # Add drive file id to meta_data csv
+    if len(temp) != 1:
+        print("Exiting, input .csv not properly formatted")
+        sys.exit()
+    row = temp[0]
+    local_meta.at[row, "ID"] = id
+    q.put([row, id])
+
+    #drive.CreateFile({'id':textfile['id']}).GetContentFile('eng-dl.txt')
+    
 if __name__ == "__main__":
     # Run authentication:
     gauth = GoogleAuth()
@@ -115,27 +142,21 @@ if __name__ == "__main__":
     for file in os.listdir(BASE_PATH):
         if file.endswith(".jpg") and file[0] == "f":
             im_upload.append(file)
-    for filename in im_upload: # upload the images to drive
-        file = drive.CreateFile()   
-        file.SetContentFile(BASE_PATH + filename)
-        file.Upload()
-        id = file["id"]
-        temp = local_meta.index[local_meta["File"]==filename].tolist()
-        print(local_meta)
-        print(local_meta["File"].tolist())
-        # Add drive file id to meta_data csv
-        if len(temp) != 1:
-            print("Exiting, input .csv not properly formatted")
-            break
-        row = temp[0]
-        local_meta.at[row, "ID"] = id
-        print(f"uploading {filename} to {id}...")
+    q = queue.Queue()
+    os.chdir(BASE_PATH)
+    t1 = perf_counter()
+    with ThreadPoolExecutor(max_workers=100) as executor:
+        for filename in im_upload: # upload the images to drive
+            executor.submit(push_to_drive, filename, q)
+            # Add drive file id to meta_data csv
+    # Pop item
+    while not q.empty():
+        _row, _id = q.get()
+        local_meta.at[_row, "ID"] = _id
     # Upload metadata to google drive
     metadata = drive.CreateFile()
-    metadata.SetContentFile(BASE_PATH + "local_meta.json")
+    metadata.SetContentFile("local_meta.json")
     metadata.Upload()
-    
-
-
-    #drive.CreateFile({'id':textfile['id']}).GetContentFile('eng-dl.txt')
+    t1 -= perf_counter()
+    print(f"Runtime: {abs(t1)}")
     
