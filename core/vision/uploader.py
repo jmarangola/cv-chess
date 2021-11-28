@@ -145,11 +145,11 @@ if __name__ == "__main__":
     q = queue.Queue()
     os.chdir(BASE_PATH)
     t1 = perf_counter()
+    # Concurrently execute file uploads
     with ThreadPoolExecutor(max_workers=100) as executor:
-        for filename in im_upload: # upload the images to drive
-            executor.submit(push_to_drive, filename, q)
-            # Add drive file id to meta_data csv
-    # Pop item
+        for file in tqdm (im_upload, desc="Uploading batch", ascii=False, ncols=150):
+            executor.submit(push_to_drive, file, q)
+    # Dequeue drive ids, adding each to metadata as it is removed
     while not q.empty():
         _row, _id = q.get()
         local_meta.at[_row, "ID"] = _id
@@ -158,5 +158,5 @@ if __name__ == "__main__":
     metadata.SetContentFile("local_meta.json")
     metadata.Upload()
     t1 -= perf_counter()
-    print(f"Runtime: {abs(t1)}")
+    print(f"Total upload time: {abs(t1)}s")
     
