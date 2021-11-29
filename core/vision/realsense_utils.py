@@ -1,5 +1,7 @@
 """
-Realsense utils for capturing data and configuring the realsense for our constrained environment
+Realsense utility class for capturing data and configuring the Realsense D35i Camera
+
+John Marangola - marangol@bc.edu
 """
 import pyrealsense2 as rs
 import preprocessing as pr

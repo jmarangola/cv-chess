@@ -1,5 +1,10 @@
 """
 Handle data preprocessing for chessboard images
+
+John Marangola - marangol@bc.edu
+Fabio Costa - costafb@bc.edu
+Bryan Kim - kimcwa@bc.edu
+Alex - benantia@bc.edu
 """
 import cv2
 import matplotlib

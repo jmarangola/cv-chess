@@ -1,5 +1,7 @@
 """
-Upload the dataset
+Dataset related classes
+
+John Marangola - marangol@bc.edu 
 """
 import numpy as np
 from enum import Enum
@@ -125,37 +127,3 @@ class Board:
             }
         )
         return datafr
-
-"""        
-board = Board()
-board.add_pieces({"e2":ChessPiece(PieceType.PAWN, PieceColor.ORANGE)})
-
-# Examples:
-# 
-# get color of chessboard at random tiles
-print("Colors of chessboard at A8:")
-print(board.get_tile_color("A8"))
-print("Color of chessboard at H8:")
-print(board.get_tile_color("H8"))
-print()
-#
-#
-# Get piece at A4 (empty):
-print("Checking empty square A4:")
-print(board.get_chess_piece("A4")) 
-print()
-#
-# Add orange pawn to A4:
-print("Adding orange pawn to A4 and checking again:")
-board.add_pieces({"A4":ChessPiece(PieceType.KNIGHT, PieceColor.BLUE)})
-# Get piece at A4 again:
-a4 = board.get_chess_piece("A4")
-print(a4.piece_type)
-print(a4.piece_color)
-# print the tile color of a4
-print("tile color: ",  end='')
-print(board.get_tile_color("a4"))
-
-board.display_board()
-print(board.to_csv())
-"""

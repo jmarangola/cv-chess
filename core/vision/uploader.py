@@ -1,5 +1,10 @@
+"""
+Automatic dataset upload to google drive
 
+John Marangola - marangol@bc.edu
+"""
 
+from logging import root
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 from tqdm import tqdm
@@ -8,9 +13,11 @@ import queue
 import sys
 import os
 from time import perf_counter
-TMP_DEST = "/home/spark/cv-chess/core/vision/tmp/" # Where images are temporarily saved before being uploaded to drive in a batch
-LOCAL_MD_FILENAME = "local_meta.json"
-LOCAL_METADATA_JSON_PATH = TMP_DEST + LOCAL_MD_FILENAME
+
+LOCAL_PATH_TO_TMP = "/Users/johnmarangola/Desktop/repos/cv-chess/core/vision/tmp/"
+DATASET_METADATA_FILENAME = "dataset_metadata.csv"
+
+METADATA_FIELDS = ["File", "Piece Color", "Piece Type", "Position", "ID", "Batch ID"]
 
 from concurrent.futures import ThreadPoolExecutor
 from time import perf_counter
@@ -35,7 +42,7 @@ def get_id(drive, name):
 
 def download(drive, filename):
     """
-    Download a file from google drive
+    Download a file from root directory of google drive
 
     Args:
         GoogleDrive object: Access to google drive 
@@ -51,6 +58,23 @@ def download(drive, filename):
     temp.GetContentFile(filename)
     return True
 
+def upload_as_child(drive, filename, folder_id):
+    """
+    Upload a file to a parent folder
+
+    Args:
+        drive (GoogleDrive object): Access to Google Drive
+        filename (str): Name of file to be uploaded
+        folder_id (str): Parent folder drive ID
+
+    Returns:
+        GoogleDriveFile: Uploaded file
+    """
+    image_file = drive.CreateFile({'parents': [{'id': folder_id}]})
+    image_file.SetContentFile(filename)
+    image_file.Upload()
+    return image_file
+
 def create_root_folder(drive, name):
     """
     Create a root folder in Google Drive
@@ -64,7 +88,7 @@ def create_root_folder(drive, name):
     """
     for file in drive.ListFile({'q': f"'root' in parents and trashed=false"}).GetList():
         if file['title'] == name:
-            return False
+            return None
     root_folder = drive.CreateFile({'title':name, 'mimeType':"application/vnd.google-apps.folder"})
     root_folder.Upload()
     return root_folder['id']
@@ -89,20 +113,203 @@ def add_sub_directory(drive, parent_id, sub_dir):
     sub_dir.Upload()
     return sub_dir['id']
 
-def upload_new_dataset(drive, dataset_name):
-    pass
+def upload_local_dataset(dataset_name, folder_id, local_path=LOCAL_PATH_TO_TMP, metadata_filename=DATASET_METADATA_FILENAME):
+    """
+    Upload a local dataset to a Google Drive that named dataset_name.
 
-def add_to_existing_dataset(drive, dataset_name):
-    pass
+    Args:
+        dataset_name (str): Name of dataset to be uploaded to Google Drive.
+        folder_id (str): Google drive ID of folder that the dataset is uploaded within.
+        local_path (str, optional): Local absolute path of cv-chess/core/vision/tmp/. Defaults to LOCAL_PATH_TO_TMP.
+        metadata_filename (str optional): Name of metadata file (includes .csv). Defaults to DATASET_METADATA_FILENAME.
 
-def push_to_drive(filename, q):
-    file = drive.CreateFile()   
+    Returns:
+        [type]: [description]
+    """
+    # Read in local metadata
+    os.chdir(local_path)
+    try:
+        local_meta = pd.read_csv(metadata_filename)
+    except:
+        print(f"Unable to load {metadata_filename} from {LOCAL_PATH_TO_TMP}. Exiting...")
+        return False
+    # Walk through directory, finding valid files to upload
+    im_upload = []
+    for file in os.listdir(local_path):
+        if file.endswith(".jpg") and file[0] == "f":
+            im_upload.append(file)
+    # initialize empty queue
+    q = queue.Queue()
+    t1 = perf_counter() # Start runtime clock 
+    # Concurrently execute file uploads using 100 workers for the thread pool
+    with ThreadPoolExecutor(max_workers=25) as executor:
+        for file in tqdm (im_upload, desc="Threading upload", ascii=False, ncols=100):
+            executor.submit(push_to_drive_as_child, drive, local_meta, file, folder_id, q)
+    # Dequeue drive ids, adding each to metadata as it is popped from the queue
+    while not q.empty():
+        _row, _id = q.get()
+        local_meta.at[_row, "ID"] = _id
+    t1 -= perf_counter()
+    # Clean up dataframe from auto-add during copying and writing operations
+    for col in local_meta.columns.tolist():
+        # Remove any column that is not an essential metadata field
+        if col not in METADATA_FIELDS:
+            del local_meta[col]
+    local_meta.to_csv(path_or_buf=local_path + metadata_filename)
+    # Upload metadata to google drive
+    upload_as_child(drive, metadata_filename, folder_id)
+    print(f"Total upload time: {abs(t1)}s")
+    
+def upload_new_dataset(dataset_name, local_path=LOCAL_PATH_TO_TMP, metadata_filename=DATASET_METADATA_FILENAME):
+    """
+    Upload a new dataset to folder in Google Drive 
+
+    Args:
+        dataset_name (str): Name of new dataset folder
+        local_path (str, optional): Path to cv-chess/core/vision/. Defaults to "/Users/johnmarangola/Desktop/repos/cv-chess/core/vision/".
+
+    Returns:
+        boolean: True if dataset successfully uploaded, False otherwise.
+    """
+    drive = authenticate()
+    if get_id(drive, dataset_name) is not None:
+        print(f"Dataset {dataset_name} already exists. Exiting...")
+        return False
+    root_id = create_root_folder(drive, dataset_name)
+    if root_id is None:
+        print("Error.")
+        return False
+    # Upload the dataset from local to Drive
+    return upload_local_dataset(dataset_name, root_id, local_path=LOCAL_PATH_TO_TMP, metadata_filename=DATASET_METADATA_FILENAME)
+
+def add_to_existing_dataset(dataset_name,  local_path=LOCAL_PATH_TO_TMP, cloud_metadata_filename=DATASET_METADATA_FILENAME):
+    drive = authenticate()
+    folder_id = get_id(drive, dataset_name)
+    # Check to ensure that the dataset folder exists in Google Drive
+    if folder_id is None:
+        print(f"Dataset {dataset_name} not found")
+        return False
+    folder_id_string = "\'" + folder_id + "\'" + " in parents and trashed=false"  
+    file_list = drive.ListFile({'q': folder_id_string}).GetList()
+    metadata_id = None
+    # Iterate through dataset directory, searching for metadata filename
+    for file in file_list:
+        if file['title'] == cloud_metadata_filename:
+            metadata_id = file['id']
+            metadata_file = drive.CreateFile({'id':metadata_id})
+            metadata_file.GetContentFile(cloud_metadata_filename)
+            break
+    # Exit if could not find metadata .csv
+    if metadata_id is None:
+        print("Metadata .csv not found. Exiting...")
+        sys.exit()
+    cloud_metadata_df = pd.read_csv(cloud_metadata_filename)
+
+    os.chdir(local_path)
+    try:
+        local_meta = pd.read_csv(cloud_metadata_filename)
+    except:
+        print(f"Unable to load metadata file {cloud_metadata_filename} from {LOCAL_PATH_TO_TMP}. Exiting...")
+        return False
+    # Walk through directory, finding valid files to upload
+    im_upload = []
+    for file in os.listdir(local_path):
+        if file.endswith(".jpg") and file[0] == "f":
+            im_upload.append(file)
+    # initialize empty queue
+    q = queue.Queue()
+    t1 = perf_counter() # Start runtime clock 
+    # Concurrently execute file uploads using 100 workers for the thread pool
+    with ThreadPoolExecutor(max_workers=25) as executor:
+        for file in tqdm (im_upload, desc="Threading upload", ascii=False, ncols=100):
+            executor.submit(push_to_drive_as_child, drive, local_meta, file, folder_id, q)
+    # Dequeue drive ids, adding each to metadata as it is popped from the queue
+    while not q.empty():
+        _row, _id = q.get()
+        local_meta.at[_row, "ID"] = _id
+    t1 -= perf_counter()
+    temp_frames = [cloud_metadata_df, local_meta]
+    resulting_dataframe = pd.concat(temp_frames) 
+    # Clean up dataframe from auto-add during copying and writing operations
+    for col in resulting_dataframe.columns.tolist():
+        # Remove any column that is not an essential metadata field
+        if col not in METADATA_FIELDS:
+            del resulting_dataframe[col]
+    resulting_dataframe.to_csv(path_or_buf=local_path + cloud_metadata_filename)
+    # Upload metadata to google drive
+    upload_as_child(drive, cloud_metadata_filename, folder_id)
+    print(f"Total upload time: {abs(t1)}s")
+    return True
+    
+def authenticate(creds_path=LOCAL_PATH_TO_TMP[:-4]):
+    """
+    Authenticate for upload
+
+    Args:
+        creds_path (str, optional): Path to credentials. Defaults to LOCAL_PATH_TO_TMP[:-4].
+
+    Returns:
+        GoogleDrive object: Google drive context object for authenticated user
+    """
+    # Run authentication:
+    gauth = GoogleAuth()
+    os.chdir(creds_path)
+    # Try to load saved client credentials
+    gauth.LoadCredentialsFile("mycreds.txt")
+    # Authenticate if they're not there
+    if gauth.credentials is None:
+        gauth.LocalWebserverAuth()
+    # Refresh them if expired
+    elif gauth.access_token_expired:
+        gauth.Refresh()
+    # Initialize the saved creds
+    else:
+        gauth.Authorize()
+    # Save the current credentials to a file
+    gauth.SaveCredentialsFile("mycreds.txt")
+    # Create a drive object
+    drive = GoogleDrive(gauth)
+    return drive
+
+def push_to_drive_as_child(drive, local_meta, filename, parent_id, q):
+    """
+    Upload an image to Google Drive and store drive file id in queue. Concurrently executed by many threadpool workers in parallel.
+
+    Args:
+        drive (GoogleDrive object): [description]
+        local_meta (pandas.DataFrame): Pandas dataframe of metadata
+        filename (str): Filename of file that is being uploaded
+        parent_id (str): Google drive Id of the folder that the image is being uploaded to 
+        q (queue.Queue): Queue of [row, id] pairs of uploaded images 
+    """
+    file = drive.CreateFile({'parents': [{'id': parent_id}]})
     file.SetContentFile(filename)
     file.Upload()
     id = file["id"]
     temp = local_meta.index[local_meta["File"]==filename].tolist()
-    #print(local_meta)
-    #print(local_meta["File"].tolist())
+    # Add drive file id to meta_data csv iff metadata has been correctly preprocessed for upload
+    if len(temp) != 1:
+        print("Exiting, input .csv not properly formatted")
+        sys.exit() # Terminate all execution
+    row = temp[0]
+    q.put([row, id])
+    
+    
+def push_to_drive(drive, local_meta, filename, q):
+    """
+    Push a file to root directory of Drive
+
+    Args:
+        drive (GoogleDrive object): Access to Google Drive
+        local_meta (pandas.DataFrame): Image metadata dataframe
+        filename (str): Name of .jpg image to be uploaded (includes '.jpg')
+        q (queue.Queue): Queue of [row, id] pairs uploaded
+    """
+    file = drive.CreateFile()  
+    file.SetContentFile(filename)
+    file.Upload()
+    id = file["id"]
+    temp = local_meta.index[local_meta["File"]==filename].tolist()
     # Add drive file id to meta_data csv
     if len(temp) != 1:
         print("Exiting, input .csv not properly formatted")
@@ -110,53 +317,9 @@ def push_to_drive(filename, q):
     row = temp[0]
     local_meta.at[row, "ID"] = id
     q.put([row, id])
-
-    #drive.CreateFile({'id':textfile['id']}).GetContentFile('eng-dl.txt')
     
 if __name__ == "__main__":
-    # Run authentication:
-    gauth = GoogleAuth()
-    os.chdir("core/vision/")
-    # Try to load saved client credentials
-    gauth.LoadCredentialsFile("mycreds.txt")
-    if gauth.credentials is None:
-        # Authenticate if they're not there
-        gauth.LocalWebserverAuth()
-    elif gauth.access_token_expired:
-        # Refresh them if expired
-        gauth.Refresh()
-    else:
-        # Initialize the saved creds
-        gauth.Authorize()
-    # Save the current credentials to a file
-    gauth.SaveCredentialsFile("mycreds.txt")
-    # Create drive object
-    drive = GoogleDrive(gauth)
-
-    # Change to path of tmp dir! 
-    BASE_PATH = "/Users/johnmarangola/Desktop/repos/cv-chess/core/vision/tmp/"
-    
-    # Load pandas dataframe from local:
-    local_meta = pd.read_csv(r"tmp/local_meta.json")
-    im_upload = []
-    for file in os.listdir(BASE_PATH):
-        if file.endswith(".jpg") and file[0] == "f":
-            im_upload.append(file)
-    q = queue.Queue()
-    os.chdir(BASE_PATH)
-    t1 = perf_counter()
-    # Concurrently execute file uploads
-    with ThreadPoolExecutor(max_workers=100) as executor:
-        for file in tqdm (im_upload, desc="Uploading batch", ascii=False, ncols=150):
-            executor.submit(push_to_drive, file, q)
-    # Dequeue drive ids, adding each to metadata as it is removed
-    while not q.empty():
-        _row, _id = q.get()
-        local_meta.at[_row, "ID"] = _id
-    # Upload metadata to google drive
-    metadata = drive.CreateFile()
-    metadata.SetContentFile("local_meta.json")
-    metadata.Upload()
-    t1 -= perf_counter()
-    print(f"Total upload time: {abs(t1)}s")
-    
+    drive = authenticate()
+    #result = upload_new_dataset("tester")
+    #print(f"Upload sucess={result}")
+    add_to_existing_dataset("tester")

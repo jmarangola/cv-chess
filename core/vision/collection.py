@@ -1,5 +1,7 @@
 """
-Autonomously collection of data for jetson nano
+Autonomous dataset collection of data for jetson nano
+
+John Marangola - marangol@bc.edu
 """
 
 import datasets
@@ -11,6 +13,7 @@ import cv2
 import pandas as pd
 import os 
 from os.path import isfile, join
+import uuid
 
 RUN_CALIBRATION = False # Run calibration sequence or use preexisting board four corners data from config/setup.txt
 BOARD_SAVE_DEST= r"board_metadata.jpeg" # Where the debug metadata board visualization image is saved (to ensure we properly setup the metadata)
@@ -60,6 +63,7 @@ if __name__ == "__main__":
         #img = pr.warp(img, realsense.corner_positions) # warp
         files = pr.board_to_64_files(img, base_directory=TMP_DEST) # Break image up into 64 files 
         piece_types, piece_colors = [], []
+        batch_id = uuid.uuid1()
         for tile in sorted(files.keys()):
             temp = board_meta.get_chess_piece(tile)
             if temp is None:
@@ -72,13 +76,13 @@ if __name__ == "__main__":
             "File" : [files[file] for file in files.keys()],
             "Position" : [file for file in files.keys()],
             "Piece Type" : piece_types,
-            "Piece Color" : piece_colors
+            "Piece Color" : piece_colors,
+            "Batch ID" : [batch_id for i in range(len(files.keys()))]
         })
         frames = [total_metadata, tmp_meta]
         total_metadata = pd.concat(frames) # Concatenate dataframes
         print(total_metadata)
     total_metadata.to_csv(path_or_buf=LOCAL_METADATA_JSON_PATH)
-    #pr.delete_board2_64_output(base_directory=TMP_DEST)
         
     # Close streams and end pipeline
     realsense.stop_pipeline()
