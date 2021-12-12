@@ -12,15 +12,17 @@ import pandas as pd
 import queue
 import sys
 import os
+from os.path import isfile, join
 from time import perf_counter
 
 LOCAL_PATH_TO_TMP = "/Users/johnmarangola/Desktop/repos/cv-chess/core/vision/tmp/"
-DATASET_METADATA_FILENAME = "dataset_metadata.csv"
+DATASET_METADATA_FILENAME = "my_csv.csv"
 
 METADATA_FIELDS = ["File", "Piece Color", "Piece Type", "Position", "ID", "Batch ID"]
 
 from concurrent.futures import ThreadPoolExecutor
 from time import perf_counter
+import preprocessing as pre
 
 def get_id(drive, name):
     """
@@ -139,22 +141,22 @@ def upload_local_dataset(dataset_name, folder_id, local_path=LOCAL_PATH_TO_TMP, 
         if file.endswith(".jpg") and file[0] == "f":
             im_upload.append(file)
     # initialize empty queue
-    q = queue.Queue()
+    #q = queue.Queue()
     t1 = perf_counter() # Start runtime clock 
     # Concurrently execute file uploads using 100 workers for the thread pool
-    with ThreadPoolExecutor(max_workers=25) as executor:
+    with ThreadPoolExecutor(max_workers=50) as executor:
         for file in tqdm (im_upload, desc="Threading upload", ascii=False, ncols=100):
-            executor.submit(push_to_drive_as_child, drive, local_meta, file, folder_id, q)
+            executor.submit(push_to_drive_as_child, drive, local_meta, file, folder_id)
     # Dequeue drive ids, adding each to metadata as it is popped from the queue
-    while not q.empty():
-        _row, _id = q.get()
-        local_meta.at[_row, "ID"] = _id
+    #while not q.empty():
+    #    _row, _id = q.get()
+    #    local_meta.at[_row, "ID"] = _id
     t1 -= perf_counter()
     # Clean up dataframe from auto-add during copying and writing operations
-    for col in local_meta.columns.tolist():
+    #for col in local_meta.columns.tolist():
         # Remove any column that is not an essential metadata field
-        if col not in METADATA_FIELDS:
-            del local_meta[col]
+    #   if col not in METADATA_FIELDS:
+    #       del local_meta[col]
     local_meta.to_csv(path_or_buf=local_path + metadata_filename)
     # Upload metadata to google drive
     upload_as_child(drive, metadata_filename, folder_id)
@@ -271,7 +273,7 @@ def authenticate(creds_path=LOCAL_PATH_TO_TMP[:-4]):
     drive = GoogleDrive(gauth)
     return drive
 
-def push_to_drive_as_child(drive, local_meta, filename, parent_id, q):
+def push_to_drive_as_child(drive, local_meta, filename, parent_id):
     """
     Upload an image to Google Drive and store drive file id in queue. Concurrently executed by many threadpool workers in parallel.
 
@@ -280,21 +282,28 @@ def push_to_drive_as_child(drive, local_meta, filename, parent_id, q):
         local_meta (pandas.DataFrame): Pandas dataframe of metadata
         filename (str): Filename of file that is being uploaded
         parent_id (str): Google drive Id of the folder that the image is being uploaded to 
-        q (queue.Queue): Queue of [row, id] pairs of uploaded images 
+        #//q (queue.Queue): Queue of [row, id] pairs of uploaded images 
     """
     file = drive.CreateFile({'parents': [{'id': parent_id}]})
     file.SetContentFile(filename)
     file.Upload()
-    id = file["id"]
-    temp = local_meta.index[local_meta["File"]==filename].tolist()
+    #id = file["id"]
+    #temp = local_meta.index[local_meta["File"]==filename].tolist()
     # Add drive file id to meta_data csv iff metadata has been correctly preprocessed for upload
-    if len(temp) != 1:
-        print("Exiting, input .csv not properly formatted")
-        sys.exit() # Terminate all execution
-    row = temp[0]
-    q.put([row, id])
+    #if len(temp) != 1:
+    #   print("Exiting, input .csv not properly formatted")
+    #    sys.exit() # Terminate all execution
+    #row = temp[0]
+    #q.put([row, id])
+    
+def upload_iphone_dataset(drive, path_to_iphone_raw_data, local_path=LOCAL_PATH_TO_TMP):
+    os.chdir(path_to_iphone_raw_data)
+    files = [f for f in os.listdir(os.getcwd()) if isfile(os.path.join(os.getcwd(), f))]
+    for file in files:
+        pre.board_to_64_files(file, local_path)
     
     
+
 def push_to_drive(drive, local_meta, filename, q):
     """
     Push a file to root directory of Drive
@@ -322,4 +331,4 @@ if __name__ == "__main__":
     drive = authenticate()
     #result = upload_new_dataset("tester")
     #print(f"Upload sucess={result}")
-    add_to_existing_dataset("tester")
+    upload_new_dataset("realsense_dataset1")

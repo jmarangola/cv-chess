@@ -221,10 +221,14 @@ def board_to_64_files(img, base_directory=None):
         CHESS_TILES[key] = img_to_file(dict[key], base_directory=base_directory)
     return CHESS_TILES
 
-"""
-Delete all the output .jpgs saved by board_to_64_tiles(img) 
-"""
+
 def delete_board2_64_output(base_directory=None):
+    """
+    Delete all images in tmp directory (for upload)
+
+    Args:
+        base_directory (str, optional): Path to tmp directory. Defaults to None.
+    """
     if base_directory is None:
         files = [f for f in os.listdir(os.getcwd()) if isfile(os.path.join(os.getcwd(), f))]
         for file in files:
