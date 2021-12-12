@@ -14,6 +14,7 @@ import sys
 import os
 from os.path import isfile, join
 from time import perf_counter
+import collection
 
 LOCAL_PATH_TO_TMP = "/Users/johnmarangola/Desktop/repos/cv-chess/core/vision/tmp/"
 DATASET_METADATA_FILENAME = "my_csv.csv"
@@ -296,14 +297,29 @@ def push_to_drive_as_child(drive, local_meta, filename, parent_id):
     #row = temp[0]
     #q.put([row, id])
     
-def upload_iphone_dataset(drive, path_to_iphone_raw_data, local_path=LOCAL_PATH_TO_TMP):
+def upload_iphone_dataset(drive, path_to_iphone_raw_data, csv_path, FEN, local_path=LOCAL_PATH_TO_TMP):
     os.chdir(path_to_iphone_raw_data)
     files = [f for f in os.listdir(os.getcwd()) if isfile(os.path.join(os.getcwd(), f))]
-    for file in files:
-        pre.board_to_64_files(file, local_path)
+    # make sure FEN is all uppercase
+    FEN = FEN.upper() 
+    df = pd.DataFrame()
+    try:
+        with open(csv_path, "r") as read:
+            # Check to see if .csv already exists, if so read it as DataFrame
+            df = pd.read_csv(csv_path)
+    except:
+        print("Could not find existing .csv, initializing empty .csv...")
+    for img in files:
+        # Get dict of positions
+        temp_dict = collection.fen_to_dict(FEN)
+        tiles = pre.board_to_64_files(img, temp_dict, base_directory=local_path) # Break image up into 64 files
+        data_frame = pd.DataFrame(tiles)
+        data_frame = data_frame.transpose()
+        frames = [df, data_frame]
+        df = pd.concat(frames) # Concatenate dataframe
+    with open(csv_path, "w") as writedata:
+        writedata.write(local_path + "my_csv.csv")
     
-    
-
 def push_to_drive(drive, local_meta, filename, q):
     """
     Push a file to root directory of Drive
@@ -329,6 +345,6 @@ def push_to_drive(drive, local_meta, filename, q):
     
 if __name__ == "__main__":
     drive = authenticate()
-    #result = upload_new_dataset("tester")
-    #print(f"Upload sucess={result}")
-    upload_new_dataset("realsense_dataset1")
+    #upload_new_dataset("realsense_dataset1")
+    upload_iphone_dataset(drive, "/Users/johnmarangola/Desktop/repos/cv-chess/core/vision/iphone", LOCAL_PATH_TO_TMP + "my_csv.csv", "5P1R/1Q1RP1P1/3R1P2/QQPPK1R1/1B1K1N2/B1R2N1B/1N2B3R/2B1BN2".upper())
+    
