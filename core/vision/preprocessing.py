@@ -90,18 +90,20 @@ def extract_qr_polygon(nd_image, labels=(b"TL", b"BL", b"TR", b"BR"), show_polyg
     for quadrant in quadrants:
         codes = decode(quadrant, symbols=[ZBarSymbol.QRCODE])
         for code in codes:
-            poly_indices = {"TL":3, "btr":2, "BL":0, "BR":2} 
-            opposite_ind = {"TL":2, "btr":0, "BL":2, "BR":0} 
+            poly_indices = {"TL":3, "TR":2, "BL":0, "BR":2} 
+            opposite_ind = {"TL":2, "TR":0, "BL":2, "BR":0} 
             # Check if valid qr
             temp = code.data.decode()
             if code.data in labels:
                 corners[temp] = (code.polygon[opposite_ind[temp]].x, code.polygon[opposite_ind[temp]].y)
                 cv2.rectangle(nd_image, (code.polygon[0].x, code.polygon[0].y), (code.polygon[2].x, code.polygon[2].y), (0, 0, 255), 3)
-        
+    print(quadrants)
     # Draw bounding boxes and display the result for debugging:
     if show_polygons:
         cv2.imshow("test corners", nd_image)
         cv2.waitKeyEx()
+    else:
+        cv2.imwrite("cornersoutput.jpg", nd_image)
         
     return corners
     
@@ -182,9 +184,6 @@ def cropped_boad_poly(nd_image, display_result=False, crop_pad=(0, 0)):
         
     return nd_image
 
-'''
-given a board, returns a dict where each key is a tile position which is mapped to an image of that tile
-'''
 def cropped_board_to_tiles(img):
     CHESS_TILES = {}
     num_rows = img.shape[0]
@@ -192,15 +191,11 @@ def cropped_board_to_tiles(img):
     rows_per_tile = num_rows//8
     cols_per_tile = num_cols//8
     letters = "ABCDEFGH"
-    for i in range(8):
-        for j in range(1,9):
-            CHESS_TILES[letters[i] + str(j)] = img[i * rows_per_tile : (i + 1) * rows_per_tile, (j - 1) * cols_per_tile : j * cols_per_tile] 
-    print(CHESS_TILES["A1"])
+    for i in range(8, 0, -1):
+        for j in range(8):
+            CHESS_TILES[letters[j] + str(i)] = img[(8 - i) * rows_per_tile : (9 - i) * rows_per_tile, j * cols_per_tile : (j + 1) * cols_per_tile] 
     return CHESS_TILES
 
-'''
-given an image, generates a random name for it and writes it
-'''
 def img_to_file(img, base_directory=None):
     name = 'f' + "".join(map(str, np.random.permutation(10).tolist())) + ".jpg"
     if base_directory is None:
@@ -210,15 +205,11 @@ def img_to_file(img, base_directory=None):
     cv2.imwrite(wpath, img)
     return name
 
-'''
-given a board, writes 64 files, one for each tile
-'''
-def board_to_64_files(img, base_directory=None):
+def board_to_64_files(img, positions, base_directory=None):
     CHESS_TILES = {}
-    filenames = {}
     dict = cropped_board_to_tiles(img)
     for key in dict.keys():
-        CHESS_TILES[key] = img_to_file(dict[key], base_directory=base_directory)
+        CHESS_TILES[key] = (img_to_file(dict[key], base_directory), positions[key])
     return CHESS_TILES
 
 
@@ -251,7 +242,6 @@ def warp(img, corners):
     Returns:
         ndarray: warped output
     """
-    img = cv2.imread('test_case_3.jpg',0)
     img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
     pt_A, pt_B, pt_C, pt_D = corners[0], corners[1], corners[2], corners[3]
  
