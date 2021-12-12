@@ -29,7 +29,7 @@ class RealSenseCamera:
         # Set the exposure settings
         self.sensor = self.pipeline.get_active_profile().get_device().query_sensors()[1]
         self.sensor.set_option(rs.option.exposure, 1000.000)
-        self.read_pre_calib_board_corners()
+        #self.read_pre_calib_board_corners()
     
     def stop_pipeline(self):
         """
@@ -97,7 +97,7 @@ class RealSenseCamera:
         while True:
             img = self.capture_rgb_image()
             corners = pr.extract_qr_polygon(img, show_polygons=False)
-            if len(corners.keys() == 4):
+            if len(corners.keys()) == 4:
                 break
             print("Failed to find QR corners. Retrying again in 5 seconds...")
             time.sleep(5)

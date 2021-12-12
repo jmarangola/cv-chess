@@ -83,7 +83,7 @@ class Board:
                             PieceType.BISHOP: "B",
                             PieceType.QUEEN: "Q",
                         }
-        visual_colors = {PieceColor.ORANGE : (0, 160, 255), PieceColor.BLUE : (255, 0, 0)}
+        visual_colors = {PieceColor.ORANGE : (0, 0, 255), PieceColor.BLUE : (255, 0, 0)}
         for position in self.board:
             if self.board[position] is not None:
                 center_x = (int(x_translation[position[0]])) * 1024//8 + 1024//32
