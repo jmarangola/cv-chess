@@ -1,4 +1,7 @@
-# CV-Chess
+# CV-Chess - A computer vision-based chess robot
+
+
+![alt text](https://github.com/jmarangola/cv-chess/blob/main/IMG_1830.jpg?raw=true)
 
 # Final Report Group Breakdown <br />
 Section 1: Bryan Kim <br />
@@ -6,7 +9,6 @@ Section 2: Bryan Kim <br />
 Section 3: Bryan Kim, John Marangola, Alex Benanti, and ? <br />
 Section 4: Alex Benanti <br />
 Section 5: Alex Benanti <br />
-
 
 # Project Contribution High level Overview
 - Edge and corner detection experiments: Fabio Costa, John Marangola <br />
