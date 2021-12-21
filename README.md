@@ -44,7 +44,6 @@ John Marangola
   - Everything in "robotics" folder
   - uploader.py 
   - hardocde.py 
-  - 
 
 Fabio Costa 
   - ChessPiece_Color_Model.ipynb
