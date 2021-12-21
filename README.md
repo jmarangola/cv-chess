@@ -1,5 +1,8 @@
 # CV-Chess - A computer vision-based chess robot
 
+# Runnable Scripts and Commands 
+All .ipynb files should run when the proper path is added to the respective files. In the README.md for the chess_piece_classifier folder, the necessary datasets are linked.  
+
 
 ![alt text](https://github.com/jmarangola/cv-chess/blob/main/IMG_1830.jpg?raw=true)
 
@@ -34,7 +37,14 @@ Alex Benanti
   - Experimentation with border positioning
 
 John Marangola 
-  - (add stuff here)
+  - preprocessing.py 
+  - Printing and designing chess pieces 
+  - Imaging jetson and building realsense dependencies from source
+  - Datset collection 
+  - Everything in "robotics" folder
+  - uploader.py 
+  - hardocde.py 
+  - 
 
 Fabio Costa 
   - ChessPiece_Color_Model.ipynb
@@ -42,7 +52,7 @@ Fabio Costa
   - PipelineForData.ipynb
   - preprocessing.py
   - Dataset Collection 
-  - Printing chess pieces 
+  - Printing and designing chess pieces 
   - Edge and Corner Detection 
 
 Bryan Kim 
