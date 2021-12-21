@@ -4,7 +4,7 @@
 ![alt text](https://github.com/jmarangola/cv-chess/blob/main/IMG_1830.jpg?raw=true)
 
 # Final Report Group Breakdown <br />
-Section 1: Bryan Kim <br />
+Section 1: Alex Benanti and Bryan Kim <br />
 Section 2: Bryan Kim <br />
 Section 3: Bryan Kim, John Marangola, Alex Benanti, and Fabio Costa  <br />
 Section 4: Alex Benanti and Fabio Costa <br />
