@@ -2,10 +2,12 @@
     Forward and inverse kinematics computations for robot joint control 
     John Marangola - marangol@bc.edu
 """
-
+import robot_parameters
 from robot_parameters import A1, A2
 import numpy as np
 import math
+from numpy import random
+from scipy.spatial import distance
 
 def get_theta_two(x, y):
     """
@@ -52,3 +54,16 @@ def inv_theta(pos):
     thet2 = get_theta_two(x, y)
     return (get_theta_one(x, y, thet2), thet2)
 
+def linear_motion_seq(pos):
+    tmp_pos = inv_theta(pos[1:])
+    angles = []
+    for i in range(len(tmp_pos)):
+        angles.append(tmp_pos[i] * robot_parameters.RR[i] * 200 * robot_parameters.RR[i].MICROSTEP_REV[i])
+    return [pos[0], angles[0], angles[1]]
+
+def closest_reference(point, points):
+    closest_index = distance.cdist([point], points).argmin()
+    return points[closest_index]
+
+def brute_lookup():
+    pass

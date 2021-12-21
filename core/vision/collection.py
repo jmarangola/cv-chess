@@ -7,7 +7,7 @@ John Marangola - marangol@bc.edu
 import datasets
 import json
 from datasets import Board, ChessPiece, PieceColor, PieceType
-from realsense_utils import RealSenseCamera
+#from realsense_utils import RealSenseCamera
 import preprocessing as pr
 import cv2
 import pandas as pd
