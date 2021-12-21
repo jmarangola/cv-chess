@@ -15,6 +15,7 @@ import os
 from os.path import isfile, join
 from time import perf_counter
 import collection
+import cv2
 
 LOCAL_PATH_TO_TMP = "/Users/johnmarangola/Desktop/repos/cv-chess/core/vision/tmp/"
 DATASET_METADATA_FILENAME = "my_csv.csv"
@@ -300,25 +301,24 @@ def push_to_drive_as_child(drive, local_meta, filename, parent_id):
 def upload_iphone_dataset(drive, path_to_iphone_raw_data, csv_path, FEN, local_path=LOCAL_PATH_TO_TMP):
     os.chdir(path_to_iphone_raw_data)
     files = [f for f in os.listdir(os.getcwd()) if isfile(os.path.join(os.getcwd(), f))]
+    print(f"number of raw images: {len(files)}")
     # make sure FEN is all uppercase
     FEN = FEN.upper() 
     df = pd.DataFrame()
     try:
-        with open(csv_path, "r") as read:
-            # Check to see if .csv already exists, if so read it as DataFrame
-            df = pd.read_csv(csv_path)
+        df = pd.read_csv(csv_path, header=False, index=False)
     except:
         print("Could not find existing .csv, initializing empty .csv...")
-    for img in files:
+    for file in files:
         # Get dict of positions
         temp_dict = collection.fen_to_dict(FEN)
+        img = cv2.imread(file)
         tiles = pre.board_to_64_files(img, temp_dict, base_directory=local_path) # Break image up into 64 files
         data_frame = pd.DataFrame(tiles)
         data_frame = data_frame.transpose()
         frames = [df, data_frame]
         df = pd.concat(frames) # Concatenate dataframe
-    with open(csv_path, "w") as writedata:
-        writedata.write(local_path + "my_csv.csv")
+    df.to_csv(local_path + 'my_csv.csv', header=False, index=False)
     
 def push_to_drive(drive, local_meta, filename, q):
     """
@@ -346,5 +346,6 @@ def push_to_drive(drive, local_meta, filename, q):
 if __name__ == "__main__":
     drive = authenticate()
     #upload_new_dataset("realsense_dataset1")
-    upload_iphone_dataset(drive, "/Users/johnmarangola/Desktop/repos/cv-chess/core/vision/iphone", LOCAL_PATH_TO_TMP + "my_csv.csv", "5P1R/1Q1RP1P1/3R1P2/QQPPK1R1/1B1K1N2/B1R2N1B/1N2B3R/2B1BN2".upper())
+    upload_iphone_dataset(drive, "/Users/johnmarangola/Desktop/repos/cv-chess/core/vision/iphone",  LOCAL_PATH_TO_TMP + "my_csv.csv", "5P1R/1Q1RP1P1/3R1P2/QQPPK1R1/1B1K1N2/B1R2N1B/1N2B3R/2B1BN2".upper())
+    
     
