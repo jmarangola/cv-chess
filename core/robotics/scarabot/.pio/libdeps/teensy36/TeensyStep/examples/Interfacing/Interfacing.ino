@@ -16,7 +16,7 @@ Additionally a pin can be used to stop the motor
 
 // stepper and  controller
 constexpr int stpPin = 0, dirPin = 1;
-Stepper zmot(stpPin, dirPin);
+Stepper motor(stpPin, dirPin);
 StepControl controller;
 
 // pin to stop the motor, connect a push button to this pin
@@ -39,8 +39,8 @@ void setup()
     Serial.println("(type h for help)");
     
 
-    zmot.setMaxSpeed(5000);
-    zmot.setAcceleration(50000);
+    motor.setMaxSpeed(5000);
+    motor.setAcceleration(50000);
 
     pinMode(LED_BUILTIN, OUTPUT);
     pinMode(stopPin, INPUT_PULLUP);  // touch the pin with GND to stop the motor
@@ -60,7 +60,7 @@ void loop()
     {
         displayStopwatch = 0;
 
-        int currentPos = zmot.getPosition();
+        int currentPos = motor.getPosition();
         if (currentPos != lastPos)  // only display if it changed
         {
             lastPos = currentPos;
@@ -93,8 +93,8 @@ void handleCommands()
         case 'm':                               // move command
             if (!controller.isRunning())        // skip move command if motor is running already
             {
-                zmot.setTargetRel(20000);
-                controller.moveAsync(zmot);
+                motor.setTargetRel(20000);
+                controller.moveAsync(motor);
                 Serial.println("Started motor movement");
             }
             else
