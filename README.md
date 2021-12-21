@@ -66,3 +66,4 @@ Alexandre Roth
   - ChessPiece_Color_Model.ipynb
   - Dataset Collection 
   - Camera positioning
+  - hardcode.py
