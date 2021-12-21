@@ -23,7 +23,7 @@ Section 5: Alex Benanti <br />
 - Robotics: John Marangola <br />
 - Dataset Collection: All <br />
 - Pipeline for Image Classifier: Fabio, Alex B., and Alex R. <br />
-- Neural Network (Including Pandas Framework): Fabio and Alex B. <br />
+- Neural Network (Including Pandas Framework): Fabio, Alex B., and Alex R. <br />
 
 # Project Contribution by Person 
 
